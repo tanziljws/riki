@@ -1,0 +1,217 @@
+/* Global */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: #f5f6fa;
+    color: #333;
+}
+
+/* Wrapper */
+.wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 240px;
+    background: linear-gradient(180deg, #1abc9c, #3498db);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    position: fixed;   /* biar nempel di kiri */
+    top: 0;
+    left: 0;
+    height: 100vh;     /* full tinggi layar */
+    overflow-y: auto;  /* kalo menu kepanjangan bisa discroll */
+}
+
+.sidebar-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.sidebar-header .logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;    /* logo bulet */
+    object-fit: cover;
+    margin-bottom: 8px;
+    border: 3px solid #fff;
+}
+
+.sidebar-header h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* Menu */
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px; /* biar agak naik */
+}
+
+.sidebar-menu li {
+    margin: 8px 0;
+}
+
+.sidebar-menu a {
+    color: #ecf0f1;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    transition: 0.3s;
+    border-left: 4px solid transparent;
+    font-weight: 500;
+}
+
+.sidebar-menu a:hover,
+.sidebar-menu a.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid #f1c40f;
+    color: #fff;
+}
+
+.sidebar-menu i {
+    margin-right: 10px;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    margin-left: 240px; /* biar ga ketiban sidebar */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Topbar */
+.topbar {
+    background: #fff;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.topbar .welcome {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-logout {
+    background: #e74c3c;
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.btn-logout:hover {
+    background: #c0392b;
+}
+
+/* Content */
+.content {
+    padding: 30px;
+}
+
+/* Dashboard */
+.dashboard {
+    padding: 30px;
+    text-align: center;
+}
+
+.dashboard .title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* Grid Foto */
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 200px;
+    gap: 15px;
+    grid-auto-flow: dense; /* biar nutup celah kosong */
+}
+
+.photo-grid .item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.photo-grid img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Variasi ukuran acak tapi tetap rapih */
+.item1 {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+.item2 {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.item3 {
+    grid-column: span 1;
+    grid-row: span 2;
+}
+
+.item4 {
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.item5 {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+.item6 {
+    grid-column: span 1;
+    grid-row: span 1;
+}
+
+/* Hover effect */
+.photo-grid .item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Map Section */
+.map-container {
+    margin-top: 50px;
+    text-align: center;
+    width: 100%;
+}
+
+.map-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
