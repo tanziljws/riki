@@ -1,0 +1,14 @@
+{
+  "name": "Riki Galery",
+  "short_name": "Riki Galery",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#004aad",
+  "icons": [
+    { "src": "/images/logoku.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/images/logoku.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/images/logoku.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

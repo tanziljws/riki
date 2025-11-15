@@ -156,19 +156,19 @@
 }
 .dashboard{ padding:24px; max-width:1200px; margin:0 auto; font-family:'Poppins',sans-serif; }
 .hero{ display:flex; align-items:center; gap:16px; margin-bottom:18px; }
-.brand-logo{ width:64px; height:64px; border-radius:50%; background:#fff; border:2px solid var(--gold); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 24px rgba(2,6,23,.08); overflow:hidden; }
+.brand-logo{ width:64px; height:64px; border-radius:50%; background:#fff; border:2px solid var(--gold); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 24px rgba(2,6,23,.04); overflow:hidden; }
 .brand-logo img{ width:100%; height:100%; object-fit:contain; display:block; }
 .hero h1{ margin:0; font-size:22px; font-weight:800; color:#111827; }
 .hero p{ margin:2px 0 0; color:var(--muted); font-size:13px; }
 
 .stats{ display:grid; grid-template-columns:repeat(4,minmax(160px,1fr)); gap:14px; margin-bottom:16px; }
-.stat{ display:flex; gap:12px; align-items:center; padding:14px; border-radius:14px; background:var(--card); border:1px solid #eef0f4; box-shadow:0 4px 14px rgba(0,0,0,.04); text-decoration:none; }
-.stat:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(0,0,0,.08); transition:.2s; }
+.stat{ display:flex; gap:12px; align-items:center; padding:14px; border-radius:14px; background:var(--card); border:1px solid #eef0f4; box-shadow:0 2px 8px rgba(15,23,42,.04); text-decoration:none; }
+.stat:hover{ transform:translateY(-2px); box-shadow:0 6px 16px rgba(15,23,42,.08); transition:.2s; }
 .stat-icon{ width:42px; height:42px; border-radius:12px; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; border:2px solid var(--gold); }
 .stat-value{ font-size:22px; font-weight:800; color:#111827; line-height:1; }
 .stat-label{ font-size:12px; color:#6b7280; }
 
-.card{ background:var(--card); border:1px solid #eef0f4; border-radius:14px; padding:16px; box-shadow:0 6px 18px rgba(0,0,0,.05); }
+.card{ background:var(--card); border:1px solid #eef0f4; border-radius:14px; padding:16px; box-shadow:0 4px 12px rgba(15,23,42,.05); }
 .card-head{ font-weight:800; color:#111827; display:flex; align-items:center; gap:8px; margin-bottom:12px; }
 .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0; }
 .quick .qa-title{ font-weight:700; margin-bottom:12px; }

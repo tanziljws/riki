@@ -44,8 +44,9 @@
     .act-thumb img{width:100%;height:100%;object-fit:cover;display:block}
     .act-body{display:flex;flex-direction:column;gap:4px;min-width:0}
     .act-title{font-weight:900;color:#0a1f4f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px}
-    .act-meta{color:#64748b;font-size:.9rem;display:flex;gap:10px;flex-wrap:wrap}
-    .act-cmt{ color:#475569; max-width:100%; word-break:break-word; white-space:normal; overflow:visible; display:inline; }
+    .act-meta{color:#64748b;font-size:.9rem;display:flex;gap:10px;flex-wrap:wrap;min-width:0}
+    .act-meta > *{min-width:0}
+    .act-cmt{ color:#475569; flex:1 1 auto; min-width:0; overflow-wrap:break-word; word-break:break-word; white-space:normal; display:block; }
     .act-right{margin-left:auto;display:flex;align-items:center;gap:10px;white-space:nowrap}
     .badge-like{background:#fff1f2;color:#e11d48;border:1px solid #fecdd3;padding:6px 12px;border-radius:999px;font-weight:900;font-size:12px;letter-spacing:.3px}
     .badge-comment{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:6px 12px;border-radius:999px;font-weight:900;font-size:12px;letter-spacing:.3px}
@@ -53,11 +54,12 @@
     .act-view:hover{background:#003a8e}
     .timeline-dot{position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:#d4af37;box-shadow:0 0 0 4px rgba(212,175,55,.18)}
     @media (max-width: 768px){
-      .act-item{ align-items:flex-start; }
-      .act-right{ margin-left:0; }
+      .act-item{ align-items:flex-start; flex-wrap:wrap; }
+      .act-right{ margin-left:0; width:100%; order:3; display:flex; justify-content:flex-end; }
       .act-title{ white-space:normal; }
-      .act-meta{ font-size:.85rem; }
+      .act-meta{ font-size:.85rem; align-items:flex-start; }
       /* show full comment on mobile as well */
+      .act-cmt{ flex: 1 0 100%; width:100%; }
     }
   </style>
   @if(isset($type) && $type)

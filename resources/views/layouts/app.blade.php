@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Dashboard')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#004aad">
     @php
         // Use dynamic branding only for admin; keep user/guest logo unchanged
         if (request()->is('admin/*')) {
@@ -78,10 +80,10 @@
         .admin-sidebar {
             position:fixed; left:0; top:0; height:100vh; width:260px;
             background: var(--deep-blue); /* solid deep blue */
-            color:#eaf2ff; padding:18px 14px; box-shadow: 6px 0 24px rgba(2,6,23,0.25);
+            color:#eaf2ff; padding:18px 14px; box-shadow: 4px 0 14px rgba(2,6,23,0.18);
             border-right:1px solid rgba(255,255,255,0.08);
             overflow:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch;
-            box-shadow: 6px 0 24px rgba(2,6,23,0.25), inset 0 0 0 1px rgba(212,175,55,0.12); /* subtle gold line */
+            box-shadow: 4px 0 14px rgba(2,6,23,0.18), inset 0 0 0 1px rgba(212,175,55,0.12); /* subtle gold line */
             position: fixed !important; transform: translateZ(0);
         }
         .admin-sidebar::before { content:none; }
@@ -103,7 +105,7 @@
         .admin-topbar {
             height:64px; display:flex; align-items:center; justify-content:space-between;
             padding:0 18px 0 16px; background:#ffffff; backdrop-filter:saturate(100%);
-            border:1px solid rgba(0,0,0,0.06); border-radius:12px; box-shadow:0 6px 16px rgba(2,6,23,0.06);
+            border:1px solid rgba(0,0,0,0.04); border-radius:12px; box-shadow:0 4px 12px rgba(2,6,23,0.05);
             position:sticky; top:12px; z-index:10; margin:12px 24px 16px 28px; /* beri jarak ekstra dari sidebar */
         }
         .admin-topbar .left { display:flex; align-items:center; gap:10px; }
@@ -529,6 +531,13 @@
             if (!isInsideSidebar && !isMenuBtn) close();
         });
         // keep overlay hidden so content can scroll while sidebar is open
+    })();
+    </script>
+    <script>
+    (function(){
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function(){ navigator.serviceWorker.register('/service-worker.js'); });
+      }
     })();
     </script>
 </body>

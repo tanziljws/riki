@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anda Offline</title>
+  <meta name="theme-color" content="#004aad" />
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Poppins',sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#f8fafc;color:#0f172a}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;box-shadow:0 10px 24px rgba(0,0,0,.08);max-width:520px}
+    .card h1{margin:0 0 8px;font-size:1.4rem;color:#004aad}
+    .card p{margin:0 0 14px;color:#475569}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{background:#004aad;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn.secondary{background:#e2e8f0;color:#0f172a}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Anda sedang offline</h1>
+    <p>Beberapa konten tidak tersedia. Coba muat ulang saat internet kembali.</p>
+    <div class="row">
+      <button class="btn" onclick="location.reload()">Muat Ulang</button>
+      <a class="btn secondary" href="/" style="text-decoration:none;display:inline-block">Ke Beranda</a>
+    </div>
+  </main>
+</body>
+</html>
