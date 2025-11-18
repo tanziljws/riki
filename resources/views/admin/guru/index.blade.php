@@ -34,7 +34,7 @@
       <tbody>
         @forelse($guru as $i => $g)
           <tr class="row-item">
-            <td style="padding:12px 14px;border-top:1px solid #eef0f4;color:#0f172a">{{ $i + 1 }}</td>
+            <td style="padding:12px 14px;border-top:1px solid #eef0f4;color:#0f172a">{{ ($guru->firstItem() ?? 0) + $i }}</td>
             <td style="padding:12px 14px;border-top:1px solid #eef0f4;color:#0f172a;display:flex;align-items:center;gap:10px">
               <span style="width:34px;height:34px;border-radius:10px;background:#0a1f4f;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800">{{ strtoupper(substr($g->nama,0,1)) }}</span>
               <span style="font-weight:800">{{ $g->nama }}</span>
@@ -88,6 +88,24 @@
       .tbl-wrap{ margin-top:12px; }
     }
     .card > .tbl-wrap{ -webkit-overflow-scrolling: touch; }
+    /* Pager (reuse style from gallery) */
+    .guru-pager-wrap{ display:flex; justify-content:center; margin-top:8px; }
+    .guru-pager{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 14px; border-radius:999px; background:#f9fafb;
+      box-shadow:0 3px 10px rgba(15,23,42,0.08);
+      border:1px solid #e5e7eb; color:#0f172a; font-size:13px;
+    }
+    .guru-pager-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:30px; height:30px; border-radius:999px; border:1px solid #e5e7eb;
+      background:#fff; color:#0f172a; text-decoration:none;
+      box-shadow:0 2px 5px rgba(15,23,42,0.06); font-size:14px;
+      cursor:pointer; touch-action:manipulation;
+    }
+    .guru-pager-btn.disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; background:#f3f4f6; }
+    .guru-pager-btn:not(.disabled):hover{ background:#0a1f4f; color:#fff; border-color:#d4af37; }
+    .guru-pager-info{ font-size:13px; color:#4b5563; white-space:nowrap; }
   </style>
 
   <script>
@@ -104,5 +122,30 @@
       });
     });
   </script>
+
+  <div style="margin-top:12px">
+    <div class="guru-pager-wrap">
+      <div class="guru-pager">
+        @if ($guru->onFirstPage())
+          <button type="button" class="guru-pager-btn disabled" disabled>&lt;</button>
+        @else
+          <button type="button" class="guru-pager-btn" onclick="window.location='{{ $guru->previousPageUrl() }}'">&lt;</button>
+        @endif
+
+        <span class="guru-pager-info">Halaman {{ $guru->currentPage() }} dari {{ $guru->lastPage() }}</span>
+
+        @if ($guru->hasMorePages())
+          <button type="button" class="guru-pager-btn" onclick="window.location='{{ $guru->nextPageUrl() }}'">&gt;</button>
+        @else
+          <button type="button" class="guru-pager-btn disabled" disabled>&gt;</button>
+        @endif
+      </div>
+    </div>
+    @if ($guru->total() > 0)
+      <div style="text-align:center;margin-top:6px;font-size:12px;color:#6b7280;">
+        Menampilkan {{ $guru->firstItem() }}&ndash;{{ $guru->lastItem() }} dari {{ $guru->total() }} guru
+      </div>
+    @endif
+  </div>
 </div>
 @endsection

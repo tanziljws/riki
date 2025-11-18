@@ -61,7 +61,13 @@
   transition:transform .3s ease, box-shadow .3s ease;
 }
 .card:hover { transform:translateY(-6px); box-shadow:0 12px 30px rgba(0,0,0,.12); }
-.card .image { height: clamp(220px, 24vw, 280px); background-size:cover; background-position:center; }
+.card .image {
+  height: clamp(260px, 26vw, 320px);
+  background-size: contain;
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-color: #f3f4f6;
+}
 .card .content { padding:16px; }
 .card h3 { font-size:1.1rem; color:#222; margin-bottom:6px; }
 .card p { color:#666; font-size:.95rem; }
@@ -155,7 +161,7 @@
 }
 
 @media (max-width: 480px) {
-  .card .image { height: clamp(180px, 45vw, 220px); }
+  .card .image { height: clamp(220px, 60vw, 280px); }
   .card .content { padding: 12px; }
   .card h3 { font-size: 1rem; }
   .card p { font-size: .9rem; }

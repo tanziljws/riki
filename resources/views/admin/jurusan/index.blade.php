@@ -45,7 +45,7 @@
     .jrs-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(37,99,235,.18)}
     .jrs-logo{width:120px;height:120px;border-radius:999px;display:grid;place-items:center;overflow:hidden;background:#f1f5f9;position:relative;box-shadow:inset 0 0 0 6px #fff, 0 8px 24px rgba(2,6,23,.08);border:3px solid #e2e8f0}
     .jrs-logo::after{content:"";position:absolute;inset:-4px;border-radius:999px;box-shadow:0 0 0 4px rgba(212,175,55,.4);opacity:.6}
-    .jrs-logo img{width:100%;height:100%;object-fit:cover}
+    .jrs-logo img{width:100%;height:100%;object-fit:contain;object-position:center;background:#fff}
     .jrs-logo span{font-size:12px;color:#94a3b8}
     .jrs-title{margin:4px 0 0;font-size:16px;font-weight:900;color:#0a1f4f;text-align:center}
     .jrs-desc{margin:2px 0 10px;color:#475569;text-align:center;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:66px}

@@ -97,6 +97,23 @@
     }
     /* Smooth horizontal scroll on mobile */
     .card > div[style*="overflow:auto"]{ -webkit-overflow-scrolling: touch; }
+    .galeri-pager-wrap{ display:flex; justify-content:center; margin-top:8px; }
+    .galeri-pager{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 14px; border-radius:999px; background:#f9fafb;
+      box-shadow:0 3px 10px rgba(15,23,42,0.08);
+      border:1px solid #e5e7eb; color:#0f172a; font-size:13px;
+    }
+    .galeri-pager-btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:30px; height:30px; border-radius:999px; border:1px solid #e5e7eb;
+      background:#fff; color:#0f172a; text-decoration:none;
+      box-shadow:0 2px 5px rgba(15,23,42,0.06); font-size:14px;
+      cursor:pointer; touch-action:manipulation;
+    }
+    .galeri-pager-btn.disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; background:#f3f4f6; }
+    .galeri-pager-btn:not(.disabled):hover{ background:#0a1f4f; color:#fff; border-color:#d4af37; }
+    .galeri-pager-info{ font-size:13px; color:#4b5563; white-space:nowrap; }
   </style>
 
   <script>
@@ -114,6 +131,29 @@
     });
   </script>
 
-  <div style="margin-top:12px">{{ $items->links() }}</div>
+  <div style="margin-top:12px">
+    <div class="galeri-pager-wrap">
+      <div class="galeri-pager">
+        @if ($items->onFirstPage())
+          <button type="button" class="galeri-pager-btn disabled" disabled>&lt;</button>
+        @else
+          <button type="button" class="galeri-pager-btn" onclick="window.location='{{ $items->previousPageUrl() }}'">&lt;</button>
+        @endif
+
+        <span class="galeri-pager-info">Halaman {{ $items->currentPage() }} dari {{ $items->lastPage() }}</span>
+
+        @if ($items->hasMorePages())
+          <button type="button" class="galeri-pager-btn" onclick="window.location='{{ $items->nextPageUrl() }}'">&gt;</button>
+        @else
+          <button type="button" class="galeri-pager-btn disabled" disabled>&gt;</button>
+        @endif
+      </div>
+    </div>
+    @if ($items->total() > 0)
+      <div style="text-align:center;margin-top:6px;font-size:12px;color:#6b7280;">
+        Menampilkan {{ $items->firstItem() }}&ndash;{{ $items->lastItem() }} dari {{ $items->total() }} foto
+      </div>
+    @endif
+  </div>
 </div>
 @endsection

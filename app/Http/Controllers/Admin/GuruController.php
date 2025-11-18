@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Storage;
 
 class GuruController extends Controller
 {
-    // Tampilkan semua guru
+    // Tampilkan semua guru (urut lama ke baru supaya data baru muncul di bawah)
     public function index()
     {
-        $guru = Guru::all();
+        $guru = Guru::orderBy('created_at', 'asc')->paginate(12);
         return view('admin.guru.index', compact('guru'));
     }
 

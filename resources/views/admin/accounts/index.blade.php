@@ -89,9 +89,52 @@
       });
     </script>
 
+    <style>
+      #acctTable tbody tr:hover{background:#f8fafc}
+      #acctTable thead th:first-child{border-top-left-radius:12px}
+      #acctTable thead th:last-child{border-top-right-radius:12px}
+      .acct-pager-wrap{ display:flex; justify-content:center; margin-top:12px; }
+      .acct-pager{
+        display:inline-flex; align-items:center; gap:8px;
+        padding:6px 14px; border-radius:999px; background:#f9fafb;
+        box-shadow:0 3px 10px rgba(15,23,42,0.08);
+        border:1px solid #e5e7eb; color:#0f172a; font-size:13px;
+      }
+      .acct-pager-btn{
+        display:inline-flex; align-items:center; justify-content:center;
+        width:30px; height:30px; border-radius:999px; border:1px solid #e5e7eb;
+        background:#fff; color:#0f172a; text-decoration:none;
+        box-shadow:0 2px 5px rgba(15,23,42,0.06); font-size:14px;
+        cursor:pointer; touch-action:manipulation;
+      }
+      .acct-pager-btn.disabled{ opacity:.4; cursor:not-allowed; box-shadow:none; background:#f3f4f6; }
+      .acct-pager-btn:not(.disabled):hover{ background:#0a1f4f; color:#fff; border-color:#d4af37; }
+      .acct-pager-info{ font-size:13px; color:#4b5563; white-space:nowrap; }
+    </style>
+
     <div style="margin-top:12px;">
-      {{ $users->links() }}
+      <div class="acct-pager-wrap">
+        <div class="acct-pager">
+          @if ($users->onFirstPage())
+            <button type="button" class="acct-pager-btn disabled" disabled>&lt;</button>
+          @else
+            <button type="button" class="acct-pager-btn" onclick="window.location='{{ $users->previousPageUrl() }}'">&lt;</button>
+          @endif
+
+          <span class="acct-pager-info">Halaman {{ $users->currentPage() }} dari {{ $users->lastPage() }}</span>
+
+          @if ($users->hasMorePages())
+            <button type="button" class="acct-pager-btn" onclick="window.location='{{ $users->nextPageUrl() }}'">&gt;</button>
+          @else
+            <button type="button" class="acct-pager-btn disabled" disabled>&gt;</button>
+          @endif
+        </div>
+      </div>
+      @if ($users->total() > 0)
+        <div style="text-align:center;margin-top:6px;font-size:12px;color:#6b7280;">
+          Menampilkan {{ $users->firstItem() }}&ndash;{{ $users->lastItem() }} dari {{ $users->total() }} akun
+        </div>
+      @endif
     </div>
   </div>
-</div>
 @endsection

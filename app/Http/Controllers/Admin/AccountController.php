@@ -10,7 +10,7 @@ class AccountController extends Controller
 {
     public function index()
     {
-        $users = User::orderBy('name')->paginate(20);
+        $users = User::orderBy('name')->paginate(12);
         return view('admin.accounts.index', compact('users'));
     }
 
