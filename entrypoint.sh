@@ -18,8 +18,15 @@ chown -R www-data:www-data /var/www/html/storage/app/public || true
 find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
 find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
 
-# Jangan buat symlink - biarkan Laravel route yang handle
-# php artisan storage:link || true
+# BUAT SYMLINK - ini cara standar Laravel untuk serve storage files
+cd /var/www/html
+php artisan storage:link || true
+
+# Set permission untuk symlink juga
+if [ -L /var/www/html/public/storage ]; then
+    chown -h www-data:www-data /var/www/html/public/storage || true
+    chmod 777 /var/www/html/public/storage || true
+fi
 
 # Jalankan Apache
 exec apache2-foreground

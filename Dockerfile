@@ -29,8 +29,8 @@ RUN apt-get update && apt-get install -y unzip git curl \
 # Install dependency Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Jangan buat symlink di build time - akan dibuat di runtime via entrypoint
-# RUN php artisan storage:link || true
+# Buat symlink di build time juga (backup jika runtime gagal)
+RUN php artisan storage:link || true
 
 # Set permission biar Laravel bisa tulis log/cache dan file storage bisa diakses
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
