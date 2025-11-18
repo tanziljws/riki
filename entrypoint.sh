@@ -10,12 +10,12 @@ sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 # Update VirtualHost untuk listen di PORT yang benar
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/*.conf
 
-# Pastikan storage symlink ada (kadang tidak terbuat saat build)
-cd /var/www/html
-php artisan storage:link || true
-
 # Set permission untuk storage
 chmod -R 755 /var/www/html/storage/app/public || true
+chown -R www-data:www-data /var/www/html/storage/app/public || true
+
+# Jangan buat symlink - biarkan Laravel route yang handle
+# php artisan storage:link || true
 
 # Jalankan Apache
 exec apache2-foreground

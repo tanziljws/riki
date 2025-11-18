@@ -18,8 +18,13 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Allow storage route to be handled by Laravel (not Apache)
-    # Storage files will be served via Laravel route for better control
+    # Force storage route to Laravel (prioritas tinggi)
+    # Jangan biarkan Apache serve langsung dari symlink
+    RewriteCond %{REQUEST_URI} ^/storage/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+    
+    # Jika file ada di symlink, tetap arahkan ke Laravel untuk kontrol
     RewriteCond %{REQUEST_URI} ^/storage/
     RewriteRule ^ index.php [L]
     
