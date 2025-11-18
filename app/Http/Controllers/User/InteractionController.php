@@ -37,7 +37,9 @@ class InteractionController extends Controller
             'likes_count' => $likesCount,
             'liked_by_me' => $likedByMe,
             'comments' => $comments,
-        ]);
+        ])->header('Access-Control-Allow-Origin', '*')
+          ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+          ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function toggleLike(Gallery $gallery, Request $request)

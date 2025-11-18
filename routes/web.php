@@ -122,8 +122,11 @@ Route::get('/galeri', [GaleriController::class, 'index'])->name('galeri');
 Route::get('/galeri/{id}', [GaleriController::class, 'show'])->name('galeri.show');
 
 // Interactions API (persistent like & comments)
+// State bisa diakses tanpa login (untuk lihat like/comment count)
+Route::get('/galeri/{gallery}/state', [InteractionController::class, 'state'])->name('galeri.state');
+
+// Like dan comment butuh login
 Route::middleware(['auth'])->group(function(){
-    Route::get('/galeri/{gallery}/state', [InteractionController::class, 'state'])->name('galeri.state');
     Route::post('/galeri/{gallery}/like', [InteractionController::class, 'toggleLike'])->name('galeri.like');
     Route::post('/galeri/{gallery}/comments', [InteractionController::class, 'addComment'])->name('galeri.comment');
     Route::delete('/comments/{comment}', [InteractionController::class, 'deleteComment'])->name('comment.delete');
