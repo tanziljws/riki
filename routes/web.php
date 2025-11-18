@@ -41,18 +41,32 @@ Route::get('/storage/{path}', function ($path) {
         $path = urldecode($path);
         $filePath = storage_path('app/public/' . $path);
         
+        \Log::info('Storage route called', ['path' => $path, 'filePath' => $filePath]);
+        
         // Security: prevent directory traversal
         $realPath = realpath($filePath);
         $realBase = realpath(storage_path('app/public'));
         
-        if (!$realPath || !$realBase || strpos($realPath, $realBase) !== 0) {
-            \Log::warning('Storage access denied', ['path' => $path, 'realPath' => $realPath]);
+        \Log::info('Storage path check', ['realPath' => $realPath, 'realBase' => $realBase]);
+        
+        if (!$realBase) {
+            \Log::error('Storage base path not found', ['base' => storage_path('app/public')]);
+            abort(500, 'Storage configuration error');
+        }
+        
+        if (!$realPath || strpos($realPath, $realBase) !== 0) {
+            \Log::warning('Storage access denied - path traversal', ['path' => $path, 'realPath' => $realPath, 'realBase' => $realBase]);
             abort(404);
         }
         
         if (!file_exists($filePath) || !is_file($filePath)) {
-            \Log::warning('Storage file not found', ['path' => $path, 'filePath' => $filePath]);
+            \Log::warning('Storage file not found', ['path' => $path, 'filePath' => $filePath, 'exists' => file_exists($filePath)]);
             abort(404);
+        }
+        
+        if (!is_readable($filePath)) {
+            \Log::warning('Storage file not readable', ['path' => $path, 'filePath' => $filePath, 'perms' => substr(sprintf('%o', fileperms($filePath)), -4)]);
+            abort(403, 'File not readable');
         }
         
         $mimeType = @mime_content_type($filePath);
@@ -70,13 +84,15 @@ Route::get('/storage/{path}', function ($path) {
             $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
         }
         
+        \Log::info('Storage file serving', ['path' => $path, 'mimeType' => $mimeType]);
+        
         return response()->file($filePath, [
             'Content-Type' => $mimeType,
             'Cache-Control' => 'public, max-age=31536000',
         ]);
     } catch (\Exception $e) {
-        \Log::error('Storage route error', ['path' => $path, 'error' => $e->getMessage()]);
-        abort(404);
+        \Log::error('Storage route error', ['path' => $path, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        abort(500, 'Storage error: ' . $e->getMessage());
     }
 })->where('path', '.*')->name('storage');
 
