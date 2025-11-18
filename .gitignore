@@ -16,17 +16,6 @@
 /public/build
 /public/hot
 /public/storage
-# Keep public folder contents (images, videos, etc.)
-!/public/images
-!/public/videos
-!/public/css
-!/public/*.php
-!/public/*.txt
-!/public/*.js
-!/public/*.json
-!/public/*.webmanifest
-!/public/*.html
-!/public/*.ico
 /storage/*.key
 /storage/pail
 /vendor
