@@ -29,9 +29,44 @@ use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\User\AuthController as UserAuthController;
 
 /*
-|--------------------------------------------------------------------------
-| Public Routes (User)
-|--------------------------------------------------------------------------
+||--------------------------------------------------------------------------
+|| Storage Fallback Route (Prioritas Tinggi)
+||--------------------------------------------------------------------------
+|| Fallback jika symlink tidak bekerja atau file tidak ditemukan
+|| Route ini harus diletakkan sebelum route lain untuk menghindari konflik
+*/
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    
+    $mimeType = mime_content_type($filePath);
+    if (!$mimeType) {
+        // Fallback MIME type berdasarkan extension
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+        ];
+        $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
+    }
+    
+    return response()->file($filePath, [
+        'Content-Type' => $mimeType,
+        'Cache-Control' => 'public, max-age=31536000',
+    ]);
+})->where('path', '.*')->name('storage');
+
+/*
+||--------------------------------------------------------------------------
+|| Public Routes (User)
+||--------------------------------------------------------------------------
 */
 
 // Home
@@ -75,9 +110,9 @@ Route::get('/jurusan', [JurusanController::class, 'index'])->name('jurusan');
 Route::get('/eskul', [EskulController::class, 'index'])->name('eskul');
 
 /*
-|--------------------------------------------------------------------------
-| User Auth Routes (separate from admin)
-|--------------------------------------------------------------------------
+||--------------------------------------------------------------------------
+|| User Auth Routes (separate from admin)
+||--------------------------------------------------------------------------
 */
 Route::prefix('user')->name('user.')->group(function () {
     // Register
@@ -104,9 +139,9 @@ Route::prefix('user')->name('user.')->group(function () {
 });
 
 /*
-|--------------------------------------------------------------------------
-| Admin Routes (Login Required)
-|--------------------------------------------------------------------------
+||--------------------------------------------------------------------------
+|| Admin Routes (Login Required)
+||--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->group(function () {
     
@@ -147,8 +182,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 /*
-|--------------------------------------------------------------------------
-| Default Laravel Auth Compatibility
-|--------------------------------------------------------------------------
+||--------------------------------------------------------------------------
+|| Default Laravel Auth Compatibility
+||--------------------------------------------------------------------------
 */
 Route::get('/login', fn () => redirect()->route('admin.login'))->name('login');
