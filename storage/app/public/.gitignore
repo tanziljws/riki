@@ -1,2 +1,2 @@
-*
-!.gitignore
+# Allow all files in storage/app/public to be tracked
+# Remove the ignore pattern to allow files to be committed
