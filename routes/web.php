@@ -36,40 +36,48 @@ use App\Http\Controllers\User\AuthController as UserAuthController;
 || Route ini harus diletakkan sebelum route lain untuk menghindari konflik
 */
 Route::get('/storage/{path}', function ($path) {
-    // Decode URL path untuk handle special characters
-    $path = urldecode($path);
-    $filePath = storage_path('app/public/' . $path);
-    
-    // Security: prevent directory traversal
-    $realPath = realpath($filePath);
-    $realBase = realpath(storage_path('app/public'));
-    if (!$realPath || strpos($realPath, $realBase) !== 0) {
+    try {
+        // Decode URL path untuk handle special characters
+        $path = urldecode($path);
+        $filePath = storage_path('app/public/' . $path);
+        
+        // Security: prevent directory traversal
+        $realPath = realpath($filePath);
+        $realBase = realpath(storage_path('app/public'));
+        
+        if (!$realPath || !$realBase || strpos($realPath, $realBase) !== 0) {
+            \Log::warning('Storage access denied', ['path' => $path, 'realPath' => $realPath]);
+            abort(404);
+        }
+        
+        if (!file_exists($filePath) || !is_file($filePath)) {
+            \Log::warning('Storage file not found', ['path' => $path, 'filePath' => $filePath]);
+            abort(404);
+        }
+        
+        $mimeType = @mime_content_type($filePath);
+        if (!$mimeType) {
+            // Fallback MIME type berdasarkan extension
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $mimeTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'svg' => 'image/svg+xml',
+            ];
+            $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
+        }
+        
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Cache-Control' => 'public, max-age=31536000',
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Storage route error', ['path' => $path, 'error' => $e->getMessage()]);
         abort(404);
     }
-    
-    if (!file_exists($filePath) || !is_file($filePath)) {
-        abort(404);
-    }
-    
-    $mimeType = @mime_content_type($filePath);
-    if (!$mimeType) {
-        // Fallback MIME type berdasarkan extension
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        $mimeTypes = [
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'png' => 'image/png',
-            'gif' => 'image/gif',
-            'webp' => 'image/webp',
-            'svg' => 'image/svg+xml',
-        ];
-        $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
-    }
-    
-    return response()->file($filePath, [
-        'Content-Type' => $mimeType,
-        'Cache-Control' => 'public, max-age=31536000',
-    ]);
 })->where('path', '.*')->name('storage');
 
 /*
