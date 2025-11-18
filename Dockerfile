@@ -32,9 +32,10 @@ RUN composer install --no-dev --optimize-autoloader
 # Buat symbolic link untuk storage (Laravel requirement)
 RUN php artisan storage:link || true
 
-# Set permission biar Laravel bisa tulis log/cache
+# Set permission biar Laravel bisa tulis log/cache dan file storage bisa diakses
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 755 /var/www/html/storage/app/public
 
 # Copy dan set entrypoint script untuk handle PORT dari Railway
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

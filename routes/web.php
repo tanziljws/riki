@@ -36,13 +36,22 @@ use App\Http\Controllers\User\AuthController as UserAuthController;
 || Route ini harus diletakkan sebelum route lain untuk menghindari konflik
 */
 Route::get('/storage/{path}', function ($path) {
+    // Decode URL path untuk handle special characters
+    $path = urldecode($path);
     $filePath = storage_path('app/public/' . $path);
     
-    if (!file_exists($filePath)) {
+    // Security: prevent directory traversal
+    $realPath = realpath($filePath);
+    $realBase = realpath(storage_path('app/public'));
+    if (!$realPath || strpos($realPath, $realBase) !== 0) {
         abort(404);
     }
     
-    $mimeType = mime_content_type($filePath);
+    if (!file_exists($filePath) || !is_file($filePath)) {
+        abort(404);
+    }
+    
+    $mimeType = @mime_content_type($filePath);
     if (!$mimeType) {
         // Fallback MIME type berdasarkan extension
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
