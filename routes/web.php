@@ -150,9 +150,11 @@ Route::get('/storage/{path}', function ($path) {
             'size' => filesize($realPath),
         ]);
         
+        // Return file dengan headers yang benar
         return response()->file($realPath, [
             'Content-Type' => $mimeType,
             'Cache-Control' => 'public, max-age=31536000',
+            'X-Served-By' => 'Laravel-Storage-Route', // Debug header
         ]);
     } catch (\Exception $e) {
         \Log::error('Storage route error', [
