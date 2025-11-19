@@ -54,6 +54,12 @@ class GaleriController extends Controller
 
             foreach ($files as $idx => $img) {
                 $path = $img->store('gallery', 'public');
+                // Set permission untuk file yang baru di-upload
+                $fullPath = storage_path('app/public/' . $path);
+                if (file_exists($fullPath)) {
+                    @chmod($fullPath, 0644);
+                    @chown($fullPath, 'www-data');
+                }
                 Gallery::create([
                     'title' => 'Home Slide',
                     'description' => null,
@@ -71,6 +77,12 @@ class GaleriController extends Controller
             $data['category_id'] = $category->id;
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('gallery', 'public');
+                // Set permission untuk file yang baru di-upload
+                $fullPath = storage_path('app/public/' . $data['image']);
+                if (file_exists($fullPath)) {
+                    @chmod($fullPath, 0644);
+                    @chown($fullPath, 'www-data');
+                }
             }
             Gallery::create($data);
         }
@@ -105,6 +117,12 @@ class GaleriController extends Controller
                 Storage::disk('public')->delete($item->image);
             }
             $data['image'] = $request->file('image')->store('gallery', 'public');
+            // Set permission untuk file yang baru di-upload
+            $fullPath = storage_path('app/public/' . $data['image']);
+            if (file_exists($fullPath)) {
+                @chmod($fullPath, 0644);
+                @chown($fullPath, 'www-data');
+            }
         }
 
         $item->update($data);
