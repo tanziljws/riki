@@ -180,30 +180,30 @@ document.addEventListener('DOMContentLoaded', function(){
   const cards = document.querySelectorAll('.card');
   const comments = Array.from({length: cards.length}, ()=>[]);
 
-  // === Filter ===
-  // Filter cards berdasarkan kategori saat tab diklik
+  // === Filter Function ===
+  function applyFilter(filterValue) {
+    let visibleCount = 0;
+    cards.forEach(c=>{
+      const category = c.dataset.category;
+      const shouldShow = filterValue === 'all' || category === filterValue;
+      c.style.display = shouldShow ? '' : 'none';
+      if (shouldShow) visibleCount++;
+    });
+    console.log('Filter applied:', filterValue, 'Visible:', visibleCount, 'Total:', cards.length);
+  }
+
+  // === Filter Tabs ===
   tabs.forEach(tab=>{
     tab.addEventListener('click', ()=>{
       tabs.forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
       const f = tab.dataset.filter;
-      
-      // Filter cards
-      let visibleCount = 0;
-      cards.forEach(c=>{
-        const category = c.dataset.category;
-        const shouldShow = f === 'all' || category === f;
-        c.style.display = shouldShow ? '' : 'none';
-        if (shouldShow) visibleCount++;
-      });
-      
-      // Debug: log filter result
-      console.log('Filter:', f, 'Visible cards:', visibleCount, 'Total cards:', cards.length);
+      applyFilter(f);
     });
   });
   
-  // Set default: hanya tampilkan "Semua" saat pertama load
-  // Semua card sudah visible by default, jadi tidak perlu hide
+  // Apply default filter "all" saat pertama load
+  applyFilter('all');
 
   // === Like, Comment, Share bar ===
   cards.forEach((card, i)=>{
