@@ -36,6 +36,13 @@ use App\Http\Controllers\User\AuthController as UserAuthController;
 || Route ini harus diletakkan sebelum route lain untuk menghindari konflik
 */
 Route::get('/storage/{path}', function ($path) {
+    // Log immediately untuk pastikan route terpanggil
+    \Log::info('=== STORAGE ROUTE HIT ===', [
+        'raw_path' => $path,
+        'request_path' => request()->path(),
+        'full_url' => request()->fullUrl(),
+    ]);
+    
     try {
         // Decode URL path untuk handle special characters
         $path = urldecode($path);
@@ -45,7 +52,7 @@ Route::get('/storage/{path}', function ($path) {
         
         $filePath = storage_path('app/public/' . $path);
         
-        \Log::info('=== STORAGE ROUTE CALLED ===', [
+        \Log::info('=== STORAGE ROUTE PROCESSING ===', [
             'original_path' => request()->path(),
             'full_url' => request()->fullUrl(),
             'decoded_path' => $path,
