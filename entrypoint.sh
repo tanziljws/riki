@@ -25,8 +25,14 @@ chmod 755 /var/www/html/storage || true
 chmod 755 /var/www/html/storage/app || true
 chmod -R 755 /var/www/html/storage/app/public || true
 
-# Jangan gunakan chown, hanya chmod saja
-# chown mungkin gagal jika user www-data tidak ada
+# Set permission untuk storage/framework (untuk compiled views)
+chmod -R 775 /var/www/html/storage/framework || true
+chmod -R 775 /var/www/html/storage/logs || true
+chmod -R 775 /var/www/html/bootstrap/cache || true
+
+# Pastikan semua folder di storage writable
+find /var/www/html/storage -type d -exec chmod 775 {} \; || true
+find /var/www/html/storage -type f -exec chmod 664 {} \; || true
 
 # Pastikan file bisa dibaca oleh web server (644 = readable by all)
 find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true

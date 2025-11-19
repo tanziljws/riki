@@ -43,7 +43,11 @@ RUN php artisan storage:link || true
 RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
     && chmod -R 755 /var/www/html/storage/app/public \
     && find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; \
-    && find /var/www/html/storage/app/public -type d -exec chmod 755 {} \;
+    && find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; \
+    && find /var/www/html/storage/framework -type d -exec chmod 775 {} \; \
+    && find /var/www/html/storage/framework -type f -exec chmod 664 {} \; \
+    && find /var/www/html/storage/logs -type d -exec chmod 775 {} \; \
+    && find /var/www/html/storage/logs -type f -exec chmod 664 {} \;
 
 # Copy dan set entrypoint script untuk handle PORT dari Railway
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
