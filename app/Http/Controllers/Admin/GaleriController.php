@@ -59,6 +59,10 @@ class GaleriController extends Controller
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0644);
                     @chown($fullPath, 'www-data');
+                    // Pastikan parent directory juga readable
+                    $parentDir = dirname($fullPath);
+                    @chmod($parentDir, 0755);
+                    @chown($parentDir, 'www-data');
                 }
                 Gallery::create([
                     'title' => 'Home Slide',
@@ -82,6 +86,10 @@ class GaleriController extends Controller
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0644);
                     @chown($fullPath, 'www-data');
+                    // Pastikan parent directory juga readable
+                    $parentDir = dirname($fullPath);
+                    @chmod($parentDir, 0755);
+                    @chown($parentDir, 'www-data');
                 }
             }
             Gallery::create($data);
