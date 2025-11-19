@@ -25,9 +25,8 @@ chmod 755 /var/www/html/storage || true
 chmod 755 /var/www/html/storage/app || true
 chmod -R 755 /var/www/html/storage/app/public || true
 
-# Set ownership
-chown -R www-data:www-data /var/www/html/storage || true
-chown -R www-data:www-data /var/www/html/storage/app/public || true
+# Jangan gunakan chown, hanya chmod saja
+# chown mungkin gagal jika user www-data tidak ada
 
 # Pastikan file bisa dibaca oleh web server (644 = readable by all)
 find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
@@ -44,7 +43,6 @@ ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage || true
 
 # Set permission untuk symlink dan pastikan bisa diakses
 if [ -L /var/www/html/public/storage ]; then
-    chown -h www-data:www-data /var/www/html/public/storage || true
     chmod 755 /var/www/html/public/storage || true
     echo "SUCCESS: storage symlink created"
     ls -la /var/www/html/public/ | grep storage
@@ -87,7 +85,6 @@ fi
 
 # Pastikan public directory juga bisa diakses
 chmod 755 /var/www/html/public || true
-chown www-data:www-data /var/www/html/public || true
 
 # Jalankan Apache
 exec apache2-foreground
