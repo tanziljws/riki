@@ -45,12 +45,14 @@ Route::get('/storage/{path}', function ($path) {
         
         $filePath = storage_path('app/public/' . $path);
         
-        \Log::info('Storage route called', [
+        \Log::info('=== STORAGE ROUTE CALLED ===', [
             'original_path' => request()->path(),
+            'full_url' => request()->fullUrl(),
             'decoded_path' => $path,
             'filePath' => $filePath,
             'file_exists' => file_exists($filePath),
             'is_readable' => file_exists($filePath) ? is_readable($filePath) : false,
+            'is_file' => file_exists($filePath) ? is_file($filePath) : false,
         ]);
         
         // Security: prevent directory traversal
