@@ -23,35 +23,43 @@ class GaleriController extends Controller
             return [$slug => $c->name];
         })->toArray();
 
-        $items = Gallery::with('category')->orderByDesc('id')->get()->map(function($g){
-            // Map kategori ke slug yang sesuai dengan filter buttons
-            $categoryName = $g->category ? strtolower($g->category->name) : '';
-            $slug = 'lainnya';
-            
-            if (str_contains($categoryName, 'kepala sekolah')) {
-                $slug = 'kepala-sekolah';
-            } elseif (str_contains($categoryName, 'guru')) {
-                $slug = 'guru';
-            } elseif (str_contains($categoryName, 'jurusan')) {
-                $slug = 'jurusan';
-            } elseif (str_contains($categoryName, 'kegiatan')) {
-                $slug = 'kegiatan';
-            } elseif (str_contains($categoryName, 'ekstrakurikuler') || str_contains($categoryName, 'eskul')) {
-                $slug = 'eskul';
-            }
-            
-            $likes = Like::where('gallery_id', $g->id)->count();
-            $comments = Comment::where('gallery_id', $g->id)->count();
-            return [
-                'id' => $g->id,
-                'kategori' => $slug,
-                'img' => asset('storage/'.$g->image),
-                'judul' => $g->title,
-                'desk' => $g->description ?? '',
-                'likes_count' => $likes,
-                'comments_count' => $comments,
-            ];
-        })->toArray();
+        $items = Gallery::with('category')
+            ->whereHas('category', function($q) {
+                // Exclude kategori "Home" dari galeri (hanya untuk homepage hero)
+                $q->whereNotIn('name', ['Home', 'home']);
+            })
+            ->orderByDesc('id')
+            ->get()
+            ->map(function($g){
+                // Map kategori ke slug yang sesuai dengan filter buttons
+                $categoryName = $g->category ? strtolower($g->category->name) : '';
+                $slug = 'lainnya';
+                
+                if (str_contains($categoryName, 'kepala sekolah')) {
+                    $slug = 'kepala-sekolah';
+                } elseif (str_contains($categoryName, 'guru')) {
+                    $slug = 'guru';
+                } elseif (str_contains($categoryName, 'jurusan')) {
+                    $slug = 'jurusan';
+                } elseif (str_contains($categoryName, 'kegiatan')) {
+                    $slug = 'kegiatan';
+                } elseif (str_contains($categoryName, 'ekstrakurikuler') || str_contains($categoryName, 'eskul')) {
+                    $slug = 'eskul';
+                }
+                
+                $likes = Like::where('gallery_id', $g->id)->count();
+                $comments = Comment::where('gallery_id', $g->id)->count();
+                return [
+                    'id' => $g->id,
+                    'kategori' => $slug,
+                    'img' => asset('storage/'.$g->image),
+                    'judul' => $g->title,
+                    'desk' => $g->description ?? '',
+                    'likes_count' => $likes,
+                    'comments_count' => $comments,
+                ];
+            })
+            ->toArray();
 
         return view('user.galeri', compact('categories', 'items'));
     }
