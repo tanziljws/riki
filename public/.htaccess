@@ -18,9 +18,10 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Force semua request /storage/ ke Laravel route untuk handle permission issues
-    # Ini memastikan Laravel route fallback selalu dipanggil
+    # Handle /storage/ requests
+    # Coba serve langsung dari symlink dulu, jika tidak ada baru ke Laravel
     RewriteCond %{REQUEST_URI} ^/storage/
+    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
     
     # Send Requests To Front Controller...
