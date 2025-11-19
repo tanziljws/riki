@@ -158,10 +158,10 @@ Route::get('/storage/{path}', function ($path) {
         ]);
         
         // Serve file langsung dengan readfile untuk menghindari permission issues
-        return response()->streamDownload(function() use ($realPath) {
-            readfile($realPath);
-        }, basename($realPath), [
+        // Gunakan response()->make() dengan readfile() untuk serve file sebagai image
+        return response()->make(file_get_contents($realPath), 200, [
             'Content-Type' => $mimeType,
+            'Content-Length' => filesize($realPath),
             'Cache-Control' => 'public, max-age=31536000',
             'X-Served-By' => 'Laravel-Storage-Route',
         ]);
