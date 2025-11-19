@@ -30,7 +30,7 @@ class GaleriController extends Controller
             return [
                 'id' => $g->id,
                 'kategori' => $slug,
-                'img' => 'storage/'.$g->image,
+                'img' => asset('storage/'.$g->image), // Gunakan asset() helper untuk HTTPS
                 'judul' => $g->title,
                 'desk' => $g->description ?? '',
                 'likes_count' => $likes,
@@ -51,7 +51,7 @@ class GaleriController extends Controller
         $item = [
             'id' => $g->id,
             'kategori' => $g->category ? Str::slug($g->category->name) : 'lainnya',
-            'img' => 'storage/'.$g->image,
+            'img' => asset('storage/'.$g->image), // Gunakan asset() helper untuk HTTPS
             'judul' => $g->title,
             'desk' => $g->description ?? '',
         ];

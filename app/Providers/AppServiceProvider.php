@@ -23,9 +23,14 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
         
-        // Force HTTPS in production
-        if (app()->environment('production') || env('FORCE_HTTPS', false)) {
-            \URL::forceScheme('https');
+        // Force HTTPS selalu (untuk Railway production)
+        // Cek jika request sudah HTTPS atau ada header dari proxy
+        if (request()->server('HTTP_X_FORWARDED_PROTO') === 'https' 
+            || request()->server('HTTPS') === 'on'
+            || request()->secure()
+            || env('APP_ENV') === 'production'
+            || str_contains(env('APP_URL', ''), 'https://')) {
+            URL::forceScheme('https');
         }
     }
 }
