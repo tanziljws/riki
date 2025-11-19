@@ -18,27 +18,36 @@ chown -R www-data:www-data /var/www/html/storage/app/public || true
 find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
 find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
 
+# Pastikan semua parent directory juga readable
+chmod 755 /var/www/html/storage || true
+chmod 755 /var/www/html/storage/app || true
+chown -R www-data:www-data /var/www/html/storage || true
+
 # BUAT SYMLINK - ini cara standar Laravel untuk serve storage files
 cd /var/www/html
 
 # Hapus symlink lama jika ada
 rm -f /var/www/html/public/storage || true
 
-# Buat symlink baru
-php artisan storage:link || true
+# Buat symlink baru dengan absolute path
+ln -sf /var/www/html/storage/app/public /var/www/html/public/storage || true
 
-# Set permission untuk symlink dan target
+# Set permission untuk symlink
 if [ -L /var/www/html/public/storage ]; then
     chown -h www-data:www-data /var/www/html/public/storage || true
-    # Pastikan target directory bisa diakses
-    chmod -R 755 /var/www/html/storage/app/public || true
-    chown -R www-data:www-data /var/www/html/storage/app/public || true
-    # Pastikan file readable
-    find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
+    chmod 777 /var/www/html/public/storage || true
+    echo "SUCCESS: storage symlink created"
+    ls -la /var/www/html/public/storage
+else
+    echo "ERROR: Failed to create storage symlink"
+    # Fallback: buat dengan artisan
+    php artisan storage:link || true
 fi
 
-# Debug: cek apakah symlink ada
-ls -la /var/www/html/public/ | grep storage || echo "WARNING: storage symlink not found"
+# Final permission check
+chmod -R 755 /var/www/html/storage/app/public || true
+chown -R www-data:www-data /var/www/html/storage/app/public || true
+find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
 
 # Jalankan Apache
 exec apache2-foreground

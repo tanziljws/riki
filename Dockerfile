@@ -10,6 +10,9 @@ RUN a2enmod rewrite
 # Set ServerName untuk menghilangkan warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
+# Enable FollowSymLinks untuk Apache bisa follow symlink
+RUN echo "Options +FollowSymLinks" >> /etc/apache2/apache2.conf
+
 # Atur DocumentRoot ke public folder (Laravel standard)
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
