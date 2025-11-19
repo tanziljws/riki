@@ -18,6 +18,9 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
+# Enable FollowSymLinks di VirtualHost juga
+RUN sed -ri -e 's/<Directory \/var\/www\/html\/public>/<Directory \/var\/www\/html\/public>\n    Options +FollowSymLinks/g' /etc/apache2/sites-available/*.conf || true
+
 # Copy semua file project ke container
 COPY . /var/www/html
 
