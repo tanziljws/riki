@@ -60,10 +60,25 @@ else
 fi
 
 # Final permission check - pastikan semua bisa dibaca
+# Set permission secara recursive untuk semua file dan folder
 chmod -R 755 /var/www/html/storage/app/public || true
 chown -R www-data:www-data /var/www/html/storage/app/public || true
+
+# Pastikan semua file readable (644) dan semua folder executable (755)
 find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
 find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
+
+# Pastikan parent directories juga readable
+chmod 755 /var/www/html/storage/app/public/gallery 2>/dev/null || true
+chown www-data:www-data /var/www/html/storage/app/public/gallery 2>/dev/null || true
+
+# Debug: list beberapa file untuk verifikasi
+echo "=== Storage files check ==="
+ls -la /var/www/html/storage/app/public/ | head -10 || true
+if [ -d /var/www/html/storage/app/public/gallery ]; then
+    echo "=== Gallery folder check ==="
+    ls -la /var/www/html/storage/app/public/gallery/ | head -10 || true
+fi
 
 # Pastikan public directory juga bisa diakses
 chmod 755 /var/www/html/public || true

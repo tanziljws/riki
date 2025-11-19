@@ -39,45 +39,92 @@ Route::get('/storage/{path}', function ($path) {
     try {
         // Decode URL path untuk handle special characters
         $path = urldecode($path);
+        
+        // Normalize path - remove leading/trailing slashes
+        $path = ltrim($path, '/');
+        
         $filePath = storage_path('app/public/' . $path);
         
-        \Log::info('Storage route called', ['path' => $path, 'filePath' => $filePath]);
+        \Log::info('Storage route called', [
+            'original_path' => request()->path(),
+            'decoded_path' => $path,
+            'filePath' => $filePath,
+            'file_exists' => file_exists($filePath),
+            'is_readable' => file_exists($filePath) ? is_readable($filePath) : false,
+        ]);
         
         // Security: prevent directory traversal
         $realPath = realpath($filePath);
         $realBase = realpath(storage_path('app/public'));
-        
-        \Log::info('Storage path check', ['realPath' => $realPath, 'realBase' => $realBase]);
         
         if (!$realBase) {
             \Log::error('Storage base path not found', ['base' => storage_path('app/public')]);
             abort(500, 'Storage configuration error');
         }
         
-        if (!$realPath || strpos($realPath, $realBase) !== 0) {
-            \Log::warning('Storage access denied - path traversal', ['path' => $path, 'realPath' => $realPath, 'realBase' => $realBase]);
-            abort(404);
+        if (!$realPath) {
+            \Log::warning('Storage file path not resolved', [
+                'path' => $path,
+                'filePath' => $filePath,
+                'realBase' => $realBase,
+                'directory_exists' => is_dir(dirname($filePath)),
+            ]);
+            abort(404, 'File not found');
         }
         
-        if (!file_exists($filePath) || !is_file($filePath)) {
-            \Log::warning('Storage file not found', ['path' => $path, 'filePath' => $filePath, 'exists' => file_exists($filePath)]);
-            abort(404);
+        if (strpos($realPath, $realBase) !== 0) {
+            \Log::warning('Storage access denied - path traversal', [
+                'path' => $path,
+                'realPath' => $realPath,
+                'realBase' => $realBase,
+            ]);
+            abort(404, 'Invalid path');
         }
         
-        if (!is_readable($filePath)) {
-            \Log::warning('Storage file not readable', ['path' => $path, 'filePath' => $filePath, 'perms' => substr(sprintf('%o', fileperms($filePath)), -4)]);
-            // Try to fix permission and retry
-            @chmod($filePath, 0644);
-            @chown($filePath, 'www-data');
-            if (!is_readable($filePath)) {
+        if (!is_file($realPath)) {
+            \Log::warning('Storage path is not a file', [
+                'path' => $path,
+                'realPath' => $realPath,
+                'is_file' => is_file($realPath),
+                'is_dir' => is_dir($realPath),
+            ]);
+            abort(404, 'Not a file');
+        }
+        
+        // Fix permission jika perlu
+        $currentPerms = fileperms($realPath);
+        $currentPermsOct = substr(sprintf('%o', $currentPerms), -4);
+        
+        if (!is_readable($realPath)) {
+            \Log::warning('Storage file not readable, fixing permissions', [
+                'path' => $path,
+                'realPath' => $realPath,
+                'current_perms' => $currentPermsOct,
+            ]);
+            
+            // Try to fix permission
+            @chmod($realPath, 0644);
+            @chown($realPath, 'www-data');
+            
+            // Check parent directory permissions too
+            $parentDir = dirname($realPath);
+            @chmod($parentDir, 0755);
+            @chown($parentDir, 'www-data');
+            
+            if (!is_readable($realPath)) {
+                \Log::error('Storage file still not readable after fix', [
+                    'path' => $path,
+                    'realPath' => $realPath,
+                    'new_perms' => substr(sprintf('%o', fileperms($realPath)), -4),
+                ]);
                 abort(403, 'File not readable');
             }
         }
         
-        $mimeType = @mime_content_type($filePath);
+        $mimeType = @mime_content_type($realPath);
         if (!$mimeType) {
             // Fallback MIME type berdasarkan extension
-            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $extension = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
             $mimeTypes = [
                 'jpg' => 'image/jpeg',
                 'jpeg' => 'image/jpeg',
@@ -89,14 +136,22 @@ Route::get('/storage/{path}', function ($path) {
             $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
         }
         
-        \Log::info('Storage file serving', ['path' => $path, 'mimeType' => $mimeType]);
+        \Log::info('Storage file serving successfully', [
+            'path' => $path,
+            'mimeType' => $mimeType,
+            'size' => filesize($realPath),
+        ]);
         
-        return response()->file($filePath, [
+        return response()->file($realPath, [
             'Content-Type' => $mimeType,
             'Cache-Control' => 'public, max-age=31536000',
         ]);
     } catch (\Exception $e) {
-        \Log::error('Storage route error', ['path' => $path, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        \Log::error('Storage route error', [
+            'path' => $path ?? 'unknown',
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
         abort(500, 'Storage error: ' . $e->getMessage());
     }
 })->where('path', '.*')->name('storage');
