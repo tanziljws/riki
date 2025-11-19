@@ -39,9 +39,11 @@ RUN composer install --no-dev --optimize-autoloader
 RUN php artisan storage:link || true
 
 # Set permission biar Laravel bisa tulis log/cache dan file storage bisa diakses
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 755 /var/www/html/storage/app/public
+# Hanya gunakan chmod, jangan chown (karena mungkin user www-data tidak ada di build time)
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 755 /var/www/html/storage/app/public \
+    && find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; \
+    && find /var/www/html/storage/app/public -type d -exec chmod 755 {} \;
 
 # Copy dan set entrypoint script untuk handle PORT dari Railway
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
