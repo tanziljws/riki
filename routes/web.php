@@ -66,7 +66,12 @@ Route::get('/storage/{path}', function ($path) {
         
         if (!is_readable($filePath)) {
             \Log::warning('Storage file not readable', ['path' => $path, 'filePath' => $filePath, 'perms' => substr(sprintf('%o', fileperms($filePath)), -4)]);
-            abort(403, 'File not readable');
+            // Try to fix permission and retry
+            @chmod($filePath, 0644);
+            @chown($filePath, 'www-data');
+            if (!is_readable($filePath)) {
+                abort(403, 'File not readable');
+            }
         }
         
         $mimeType = @mime_content_type($filePath);

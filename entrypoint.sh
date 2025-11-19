@@ -10,18 +10,28 @@ sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
 # Update VirtualHost untuk listen di PORT yang benar
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-available/*.conf
 
+# Pastikan VirtualHost memiliki Options +FollowSymLinks +Indexes
+# Ini penting untuk Apache bisa akses symlink dan file
+for conf in /etc/apache2/sites-available/*.conf; do
+    if ! grep -q "Options +FollowSymLinks" "$conf"; then
+        sed -i '/<Directory \/var\/www\/html\/public>/a\    Options +FollowSymLinks +Indexes' "$conf" || true
+    fi
+done
+
 # Set permission untuk storage (sangat penting!)
-chmod -R 755 /var/www/html/storage/app/public || true
-chown -R www-data:www-data /var/www/html/storage/app/public || true
-
-# Pastikan file bisa dibaca oleh web server
-find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
-find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
-
-# Pastikan semua parent directory juga readable
+# Pastikan semua parent directory readable
+chmod 755 /var/www/html || true
 chmod 755 /var/www/html/storage || true
 chmod 755 /var/www/html/storage/app || true
+chmod -R 755 /var/www/html/storage/app/public || true
+
+# Set ownership
 chown -R www-data:www-data /var/www/html/storage || true
+chown -R www-data:www-data /var/www/html/storage/app/public || true
+
+# Pastikan file bisa dibaca oleh web server (644 = readable by all)
+find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
+find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
 
 # BUAT SYMLINK - ini cara standar Laravel untuk serve storage files
 cd /var/www/html

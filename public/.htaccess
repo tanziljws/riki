@@ -18,10 +18,9 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Biarkan Apache serve file storage langsung dari symlink (cara standar Laravel)
-    # Jika file tidak ada, baru arahkan ke Laravel route sebagai fallback
+    # Force semua request /storage/ ke Laravel route untuk handle permission issues
+    # Ini memastikan Laravel route fallback selalu dipanggil
     RewriteCond %{REQUEST_URI} ^/storage/
-    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
     
     # Send Requests To Front Controller...
