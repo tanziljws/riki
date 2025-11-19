@@ -25,14 +25,23 @@ chmod 755 /var/www/html/storage || true
 chmod 755 /var/www/html/storage/app || true
 chmod -R 755 /var/www/html/storage/app/public || true
 
-# Set permission untuk storage/framework (untuk compiled views)
-chmod -R 775 /var/www/html/storage/framework || true
-chmod -R 775 /var/www/html/storage/logs || true
-chmod -R 775 /var/www/html/bootstrap/cache || true
+# Pastikan folder storage/framework/views ada
+mkdir -p /var/www/html/storage/framework/views || true
+mkdir -p /var/www/html/storage/framework/cache || true
+mkdir -p /var/www/html/storage/framework/sessions || true
+mkdir -p /var/www/html/storage/logs || true
+mkdir -p /var/www/html/bootstrap/cache || true
 
-# Pastikan semua folder di storage writable
-find /var/www/html/storage -type d -exec chmod 775 {} \; || true
-find /var/www/html/storage -type f -exec chmod 664 {} \; || true
+# Set permission untuk storage/framework (untuk compiled views) - gunakan 777 untuk memastikan writable
+chmod -R 777 /var/www/html/storage/framework || true
+chmod -R 777 /var/www/html/storage/logs || true
+chmod -R 777 /var/www/html/bootstrap/cache || true
+
+# Pastikan semua folder di storage writable (kecuali app/public yang sudah di-handle)
+find /var/www/html/storage/framework -type d -exec chmod 777 {} \; || true
+find /var/www/html/storage/framework -type f -exec chmod 666 {} \; || true
+find /var/www/html/storage/logs -type d -exec chmod 777 {} \; || true
+find /var/www/html/storage/logs -type f -exec chmod 666 {} \; || true
 
 # Pastikan file bisa dibaca oleh web server (644 = readable by all)
 find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true

@@ -40,14 +40,18 @@ RUN php artisan storage:link || true
 
 # Set permission biar Laravel bisa tulis log/cache dan file storage bisa diakses
 # Hanya gunakan chmod, jangan chown (karena mungkin user www-data tidak ada di build time)
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache \
+# Pastikan folder framework/views ada
+RUN mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/framework/cache \
+    && mkdir -p /var/www/html/storage/framework/sessions \
+    && mkdir -p /var/www/html/storage/logs \
+    && mkdir -p /var/www/html/bootstrap/cache \
+    && chmod -R 777 /var/www/html/storage/framework \
+    && chmod -R 777 /var/www/html/storage/logs \
+    && chmod -R 777 /var/www/html/bootstrap/cache \
     && chmod -R 755 /var/www/html/storage/app/public \
     && find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; \
-    && find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; \
-    && find /var/www/html/storage/framework -type d -exec chmod 775 {} \; \
-    && find /var/www/html/storage/framework -type f -exec chmod 664 {} \; \
-    && find /var/www/html/storage/logs -type d -exec chmod 775 {} \; \
-    && find /var/www/html/storage/logs -type f -exec chmod 664 {} \;
+    && find /var/www/html/storage/app/public -type d -exec chmod 755 {} \;
 
 # Copy dan set entrypoint script untuk handle PORT dari Railway
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
