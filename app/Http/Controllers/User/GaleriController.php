@@ -24,13 +24,28 @@ class GaleriController extends Controller
         })->toArray();
 
         $items = Gallery::with('category')->orderByDesc('id')->get()->map(function($g){
-            $slug = $g->category ? Str::slug($g->category->name) : 'lainnya';
+            // Map kategori ke slug yang sesuai dengan filter buttons
+            $categoryName = $g->category ? strtolower($g->category->name) : '';
+            $slug = 'lainnya';
+            
+            if (str_contains($categoryName, 'kepala sekolah')) {
+                $slug = 'kepala-sekolah';
+            } elseif (str_contains($categoryName, 'guru')) {
+                $slug = 'guru';
+            } elseif (str_contains($categoryName, 'jurusan')) {
+                $slug = 'jurusan';
+            } elseif (str_contains($categoryName, 'kegiatan')) {
+                $slug = 'kegiatan';
+            } elseif (str_contains($categoryName, 'ekstrakurikuler') || str_contains($categoryName, 'eskul')) {
+                $slug = 'eskul';
+            }
+            
             $likes = Like::where('gallery_id', $g->id)->count();
             $comments = Comment::where('gallery_id', $g->id)->count();
             return [
                 'id' => $g->id,
                 'kategori' => $slug,
-                'img' => asset('storage/'.$g->image), // Gunakan asset() helper untuk HTTPS
+                'img' => asset('storage/'.$g->image),
                 'judul' => $g->title,
                 'desk' => $g->description ?? '',
                 'likes_count' => $likes,

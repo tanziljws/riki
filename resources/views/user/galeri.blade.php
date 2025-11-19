@@ -181,16 +181,29 @@ document.addEventListener('DOMContentLoaded', function(){
   const comments = Array.from({length: cards.length}, ()=>[]);
 
   // === Filter ===
+  // Filter cards berdasarkan kategori saat tab diklik
   tabs.forEach(tab=>{
     tab.addEventListener('click', ()=>{
       tabs.forEach(t=>t.classList.remove('active'));
       tab.classList.add('active');
       const f = tab.dataset.filter;
+      
+      // Filter cards
+      let visibleCount = 0;
       cards.forEach(c=>{
-        c.style.display = (f==='all' || c.dataset.category===f) ? '' : 'none';
+        const category = c.dataset.category;
+        const shouldShow = f === 'all' || category === f;
+        c.style.display = shouldShow ? '' : 'none';
+        if (shouldShow) visibleCount++;
       });
+      
+      // Debug: log filter result
+      console.log('Filter:', f, 'Visible cards:', visibleCount, 'Total cards:', cards.length);
     });
   });
+  
+  // Set default: hanya tampilkan "Semua" saat pertama load
+  // Semua card sudah visible by default, jadi tidak perlu hide
 
   // === Like, Comment, Share bar ===
   cards.forEach((card, i)=>{
