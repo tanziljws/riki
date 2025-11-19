@@ -91,34 +91,40 @@ Route::get('/storage/{path}', function ($path) {
             abort(404, 'Not a file');
         }
         
-        // Fix permission jika perlu
+        // ALWAYS fix permission untuk memastikan file bisa diakses
+        // Ini penting karena file baru mungkin belum punya permission yang benar
         $currentPerms = fileperms($realPath);
         $currentPermsOct = substr(sprintf('%o', $currentPerms), -4);
         
+        // Fix permission untuk file
+        @chmod($realPath, 0644);
+        @chown($realPath, 'www-data');
+        
+        // Fix permission untuk semua parent directories
+        $currentDir = dirname($realPath);
+        $baseDir = storage_path('app/public');
+        
+        while ($currentDir !== $baseDir && $currentDir !== dirname($baseDir)) {
+            @chmod($currentDir, 0755);
+            @chown($currentDir, 'www-data');
+            $currentDir = dirname($currentDir);
+        }
+        
+        // Pastikan base directory juga readable
+        @chmod($baseDir, 0755);
+        @chown($baseDir, 'www-data');
+        
+        // Check lagi apakah file readable
         if (!is_readable($realPath)) {
-            \Log::warning('Storage file not readable, fixing permissions', [
+            \Log::error('Storage file still not readable after aggressive fix', [
                 'path' => $path,
                 'realPath' => $realPath,
                 'current_perms' => $currentPermsOct,
+                'new_perms' => substr(sprintf('%o', fileperms($realPath)), -4),
+                'file_exists' => file_exists($realPath),
+                'is_file' => is_file($realPath),
             ]);
-            
-            // Try to fix permission
-            @chmod($realPath, 0644);
-            @chown($realPath, 'www-data');
-            
-            // Check parent directory permissions too
-            $parentDir = dirname($realPath);
-            @chmod($parentDir, 0755);
-            @chown($parentDir, 'www-data');
-            
-            if (!is_readable($realPath)) {
-                \Log::error('Storage file still not readable after fix', [
-                    'path' => $path,
-                    'realPath' => $realPath,
-                    'new_perms' => substr(sprintf('%o', fileperms($realPath)), -4),
-                ]);
-                abort(403, 'File not readable');
-            }
+            abort(403, 'File not readable');
         }
         
         $mimeType = @mime_content_type($realPath);
