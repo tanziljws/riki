@@ -49,28 +49,34 @@ find /var/www/html/storage/app/public -type f -exec chmod 777 {} \; || true
 find /var/www/html/storage/app/public -type d -exec chmod 777 {} \; || true
 
 # BUAT SYMLINK - ini cara standar Laravel untuk serve storage files
+# HAPUS route custom /storage - biarkan Apache serve langsung dari symlink
 cd /var/www/html
 
 # Hapus symlink lama jika ada
 rm -f /var/www/html/public/storage || true
 
-# Buat symlink baru dengan absolute path
-ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage || true
+# Buat symlink dengan artisan (cara paling reliable)
+php artisan storage:link || true
 
-# Set permission untuk symlink dan pastikan bisa diakses
+# Fallback: buat manual jika artisan gagal
+if [ ! -L /var/www/html/public/storage ]; then
+    ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage || true
+fi
+
+# Verifikasi symlink
 if [ -L /var/www/html/public/storage ]; then
-    chmod 755 /var/www/html/public/storage || true
-    echo "SUCCESS: storage symlink created"
+    echo "✅ SUCCESS: storage symlink created"
     ls -la /var/www/html/public/ | grep storage
     # Test apakah symlink bisa diakses
-    ls -la /var/www/html/public/storage/ | head -5 || echo "WARNING: Cannot list symlink contents"
-else
-    echo "ERROR: Failed to create storage symlink"
-    # Fallback: buat dengan artisan
-    php artisan storage:link || true
-    if [ -L /var/www/html/public/storage ]; then
-        echo "SUCCESS: storage symlink created via artisan"
+    if [ -d /var/www/html/public/storage ]; then
+        echo "✅ Symlink target is accessible"
+        ls -la /var/www/html/public/storage/ | head -5 || echo "⚠️  Cannot list symlink contents"
+    else
+        echo "⚠️  WARNING: Symlink exists but target not accessible"
     fi
+else
+    echo "❌ ERROR: Failed to create storage symlink"
+    exit 1
 fi
 
 # Final permission check - pastikan semua bisa dibaca
