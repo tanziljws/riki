@@ -29,156 +29,9 @@ use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\User\AuthController as UserAuthController;
 
 /*
-||--------------------------------------------------------------------------
-|| Storage Fallback Route (Prioritas Tinggi)
-||--------------------------------------------------------------------------
-|| Fallback jika symlink tidak bekerja atau file tidak ditemukan
-|| Route ini harus diletakkan sebelum route lain untuk menghindari konflik
-*/
-Route::get('/storage/{path}', function ($path) {
-    // Log immediately untuk pastikan route terpanggil
-    \Log::info('=== STORAGE ROUTE HIT ===', [
-        'raw_path' => $path,
-        'request_path' => request()->path(),
-        'full_url' => request()->fullUrl(),
-    ]);
-    
-    try {
-        // Decode URL path untuk handle special characters
-        $path = urldecode($path);
-        
-        // Normalize path - remove leading/trailing slashes
-        $path = ltrim($path, '/');
-        
-        $filePath = storage_path('app/public/' . $path);
-        
-        \Log::info('=== STORAGE ROUTE PROCESSING ===', [
-            'original_path' => request()->path(),
-            'full_url' => request()->fullUrl(),
-            'decoded_path' => $path,
-            'filePath' => $filePath,
-            'file_exists' => file_exists($filePath),
-            'is_readable' => file_exists($filePath) ? is_readable($filePath) : false,
-            'is_file' => file_exists($filePath) ? is_file($filePath) : false,
-        ]);
-        
-        // Security: prevent directory traversal
-        $realPath = realpath($filePath);
-        $realBase = realpath(storage_path('app/public'));
-        
-        if (!$realBase) {
-            \Log::error('Storage base path not found', ['base' => storage_path('app/public')]);
-            abort(500, 'Storage configuration error');
-        }
-        
-        if (!$realPath) {
-            \Log::warning('Storage file path not resolved', [
-                'path' => $path,
-                'filePath' => $filePath,
-                'realBase' => $realBase,
-                'directory_exists' => is_dir(dirname($filePath)),
-            ]);
-            abort(404, 'File not found');
-        }
-        
-        if (strpos($realPath, $realBase) !== 0) {
-            \Log::warning('Storage access denied - path traversal', [
-                'path' => $path,
-                'realPath' => $realPath,
-                'realBase' => $realBase,
-            ]);
-            abort(404, 'Invalid path');
-        }
-        
-        if (!is_file($realPath)) {
-            \Log::warning('Storage path is not a file', [
-                'path' => $path,
-                'realPath' => $realPath,
-                'is_file' => is_file($realPath),
-                'is_dir' => is_dir($realPath),
-            ]);
-            abort(404, 'Not a file');
-        }
-        
-        // ALWAYS fix permission untuk memastikan file bisa diakses
-        // Hanya gunakan chmod, jangan chown (karena mungkin user www-data tidak ada di Railway)
-        $currentPerms = fileperms($realPath);
-        $currentPermsOct = substr(sprintf('%o', $currentPerms), -4);
-        
-        // Fix permission untuk file (0777 = full access untuk test fix 403)
-        @chmod($realPath, 0777);
-        
-        // Fix permission untuk semua parent directories (0777 = full access)
-        $currentDir = dirname($realPath);
-        $baseDir = storage_path('app/public');
-        
-        while ($currentDir !== $baseDir && $currentDir !== dirname($baseDir)) {
-            @chmod($currentDir, 0777);
-            $currentDir = dirname($currentDir);
-        }
-        
-        // Pastikan base directory juga readable
-        @chmod($baseDir, 0777);
-        
-        // Check lagi apakah file readable
-        clearstatcache(true, $realPath); // Clear cache untuk pastikan permission ter-update
-        if (!is_readable($realPath)) {
-            \Log::error('Storage file still not readable after permission fix', [
-                'path' => $path,
-                'realPath' => $realPath,
-                'current_perms' => $currentPermsOct,
-                'new_perms' => substr(sprintf('%o', fileperms($realPath)), -4),
-                'file_exists' => file_exists($realPath),
-                'is_file' => is_file($realPath),
-                'owner' => fileowner($realPath),
-                'group' => filegroup($realPath),
-            ]);
-            abort(403, 'File not readable');
-        }
-        
-        $mimeType = @mime_content_type($realPath);
-        if (!$mimeType) {
-            // Fallback MIME type berdasarkan extension
-            $extension = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
-            $mimeTypes = [
-                'jpg' => 'image/jpeg',
-                'jpeg' => 'image/jpeg',
-                'png' => 'image/png',
-                'gif' => 'image/gif',
-                'webp' => 'image/webp',
-                'svg' => 'image/svg+xml',
-            ];
-            $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
-        }
-        
-        \Log::info('Storage file serving successfully', [
-            'path' => $path,
-            'mimeType' => $mimeType,
-            'size' => filesize($realPath),
-        ]);
-        
-        // Serve file langsung dengan readfile untuk menghindari permission issues
-        // Gunakan response()->make() dengan readfile() untuk serve file sebagai image
-        return response()->make(file_get_contents($realPath), 200, [
-            'Content-Type' => $mimeType,
-            'Content-Length' => filesize($realPath),
-            'Cache-Control' => 'public, max-age=31536000',
-            'X-Served-By' => 'Laravel-Storage-Route',
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Storage route error', [
-            'path' => $path ?? 'unknown',
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        abort(500, 'Storage error: ' . $e->getMessage());
-    }
-})->where('path', '.*')->name('storage');
-
-/*
-||--------------------------------------------------------------------------
-|| Public Routes (User)
-||--------------------------------------------------------------------------
+|||--------------------------------------------------------------------------
+||| Public Routes (User)
+|||--------------------------------------------------------------------------
 */
 
 // Home
@@ -225,9 +78,9 @@ Route::get('/jurusan', [JurusanController::class, 'index'])->name('jurusan');
 Route::get('/eskul', [EskulController::class, 'index'])->name('eskul');
 
 /*
-||--------------------------------------------------------------------------
-|| User Auth Routes (separate from admin)
-||--------------------------------------------------------------------------
+|||--------------------------------------------------------------------------
+||| User Auth Routes (separate from admin)
+|||--------------------------------------------------------------------------
 */
 Route::prefix('user')->name('user.')->group(function () {
     // Register
@@ -254,9 +107,9 @@ Route::prefix('user')->name('user.')->group(function () {
 });
 
 /*
-||--------------------------------------------------------------------------
-|| Admin Routes (Login Required)
-||--------------------------------------------------------------------------
+|||--------------------------------------------------------------------------
+||| Admin Routes (Login Required)
+|||--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->group(function () {
     
@@ -297,8 +150,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 /*
-||--------------------------------------------------------------------------
-|| Default Laravel Auth Compatibility
-||--------------------------------------------------------------------------
+|||--------------------------------------------------------------------------
+||| Default Laravel Auth Compatibility
+|||--------------------------------------------------------------------------
 */
 Route::get('/login', fn () => redirect()->route('admin.login'))->name('login');
