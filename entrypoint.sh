@@ -52,14 +52,26 @@ find /var/www/html/storage/app/public -type d -exec chmod 777 {} \; || true
 # HAPUS route custom /storage - biarkan Apache serve langsung dari symlink
 cd /var/www/html
 
-# Hapus symlink lama jika ada
-rm -f /var/www/html/public/storage || true
+# Hapus symlink atau directory lama jika ada (bisa jadi directory atau symlink)
+if [ -e /var/www/html/public/storage ]; then
+    if [ -L /var/www/html/public/storage ]; then
+        echo "Removing existing symlink..."
+        rm -f /var/www/html/public/storage || true
+    elif [ -d /var/www/html/public/storage ]; then
+        echo "Removing existing directory (should be symlink)..."
+        rm -rf /var/www/html/public/storage || true
+    else
+        echo "Removing existing file..."
+        rm -f /var/www/html/public/storage || true
+    fi
+fi
 
 # Buat symlink dengan artisan (cara paling reliable)
 php artisan storage:link || true
 
 # Fallback: buat manual jika artisan gagal
 if [ ! -L /var/www/html/public/storage ]; then
+    echo "Creating symlink manually..."
     ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage || true
 fi
 
@@ -76,6 +88,8 @@ if [ -L /var/www/html/public/storage ]; then
     fi
 else
     echo "❌ ERROR: Failed to create storage symlink"
+    echo "Checking what exists at public/storage:"
+    ls -la /var/www/html/public/ | grep storage || echo "Nothing found"
     exit 1
 fi
 
