@@ -49,9 +49,9 @@ RUN mkdir -p /var/www/html/storage/framework/views \
     && chmod -R 777 /var/www/html/storage/framework \
     && chmod -R 777 /var/www/html/storage/logs \
     && chmod -R 777 /var/www/html/bootstrap/cache \
-    && chmod -R 755 /var/www/html/storage/app/public \
-    && find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; \
-    && find /var/www/html/storage/app/public -type d -exec chmod 755 {} \;
+    && chmod -R 777 /var/www/html/storage/app/public \
+    && find /var/www/html/storage/app/public -type f -exec chmod 777 {} \; \
+    && find /var/www/html/storage/app/public -type d -exec chmod 777 {} \;
 
 # Copy dan set entrypoint script untuk handle PORT dari Railway
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

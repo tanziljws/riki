@@ -105,20 +105,20 @@ Route::get('/storage/{path}', function ($path) {
         $currentPerms = fileperms($realPath);
         $currentPermsOct = substr(sprintf('%o', $currentPerms), -4);
         
-        // Fix permission untuk file (0644 = readable by all)
-        @chmod($realPath, 0644);
+        // Fix permission untuk file (0777 = full access untuk test fix 403)
+        @chmod($realPath, 0777);
         
-        // Fix permission untuk semua parent directories (0755 = readable + executable by all)
+        // Fix permission untuk semua parent directories (0777 = full access)
         $currentDir = dirname($realPath);
         $baseDir = storage_path('app/public');
         
         while ($currentDir !== $baseDir && $currentDir !== dirname($baseDir)) {
-            @chmod($currentDir, 0755);
+            @chmod($currentDir, 0777);
             $currentDir = dirname($currentDir);
         }
         
         // Pastikan base directory juga readable
-        @chmod($baseDir, 0755);
+        @chmod($baseDir, 0777);
         
         // Check lagi apakah file readable
         clearstatcache(true, $realPath); // Clear cache untuk pastikan permission ter-update

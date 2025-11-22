@@ -43,9 +43,10 @@ find /var/www/html/storage/framework -type f -exec chmod 666 {} \; || true
 find /var/www/html/storage/logs -type d -exec chmod 777 {} \; || true
 find /var/www/html/storage/logs -type f -exec chmod 666 {} \; || true
 
-# Pastikan file bisa dibaca oleh web server (644 = readable by all)
-find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
-find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
+# Pastikan file bisa dibaca oleh web server - gunakan 777 untuk memastikan readable
+# (Ini untuk test - kalau berhasil bisa turun ke 644/755)
+find /var/www/html/storage/app/public -type f -exec chmod 777 {} \; || true
+find /var/www/html/storage/app/public -type d -exec chmod 777 {} \; || true
 
 # BUAT SYMLINK - ini cara standar Laravel untuk serve storage files
 cd /var/www/html
@@ -74,12 +75,12 @@ fi
 
 # Final permission check - pastikan semua bisa dibaca
 # Set permission secara recursive untuk semua file dan folder
-# Hanya gunakan chmod, jangan chown (karena mungkin user www-data tidak ada)
-chmod -R 755 /var/www/html/storage/app/public || true
+# Gunakan 777 untuk memastikan readable oleh semua (temporary untuk fix 403)
+chmod -R 777 /var/www/html/storage/app/public || true
 
-# Pastikan semua file readable (644) dan semua folder executable (755)
-find /var/www/html/storage/app/public -type f -exec chmod 644 {} \; || true
-find /var/www/html/storage/app/public -type d -exec chmod 755 {} \; || true
+# Pastikan semua file readable (777) dan semua folder executable (777)
+find /var/www/html/storage/app/public -type f -exec chmod 777 {} \; || true
+find /var/www/html/storage/app/public -type d -exec chmod 777 {} \; || true
 
 # Pastikan parent directories juga readable
 chmod 755 /var/www/html/storage/app/public/gallery 2>/dev/null || true

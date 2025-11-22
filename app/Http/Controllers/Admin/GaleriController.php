@@ -54,13 +54,13 @@ class GaleriController extends Controller
 
             foreach ($files as $idx => $img) {
                 $path = $img->store('gallery', 'public');
-                // Set permission untuk file yang baru di-upload
+                // Set permission untuk file yang baru di-upload (777 untuk fix 403)
                 $fullPath = storage_path('app/public/' . $path);
                 if (file_exists($fullPath)) {
-                    @chmod($fullPath, 0644);
+                    @chmod($fullPath, 0777);
                     // Pastikan parent directory juga readable
                     $parentDir = dirname($fullPath);
-                    @chmod($parentDir, 0755);
+                    @chmod($parentDir, 0777);
                 }
                 Gallery::create([
                     'title' => 'Home Slide',
@@ -79,15 +79,13 @@ class GaleriController extends Controller
             $data['category_id'] = $category->id;
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('gallery', 'public');
-                // Set permission untuk file yang baru di-upload
+                // Set permission untuk file yang baru di-upload (777 untuk fix 403)
                 $fullPath = storage_path('app/public/' . $data['image']);
                 if (file_exists($fullPath)) {
-                    @chmod($fullPath, 0644);
-                    @chown($fullPath, 'www-data');
+                    @chmod($fullPath, 0777);
                     // Pastikan parent directory juga readable
                     $parentDir = dirname($fullPath);
-                    @chmod($parentDir, 0755);
-                    @chown($parentDir, 'www-data');
+                    @chmod($parentDir, 0777);
                 }
             }
             Gallery::create($data);
