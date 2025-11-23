@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Gallery;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class GaleriController extends Controller
 {
@@ -91,29 +92,53 @@ class GaleriController extends Controller
                 
                 $uploadedFile = $request->file('image');
                 
-                // Upload file dan dapatkan path
-                $storedPath = $uploadedFile->store('gallery', 'public');
+                // Pastikan direktori gallery ada dan writable
+                $galleryDir = storage_path('app/public/gallery');
+                if (!File::exists($galleryDir)) {
+                    File::makeDirectory($galleryDir, 0777, true);
+                }
+                @chmod($galleryDir, 0777);
+                
+                // Upload file menggunakan Storage facade untuk lebih reliable
+                $originalName = $uploadedFile->getClientOriginalName();
+                $extension = $uploadedFile->getClientOriginalExtension();
+                $fileName = time() . '_' . uniqid() . '.' . $extension;
+                $storedPath = 'gallery/' . $fileName;
+                
+                // Upload menggunakan Storage facade
+                $stored = Storage::disk('public')->putFileAs('gallery', $uploadedFile, $fileName);
+                
+                // Jika Storage::putFileAs gagal, coba method alternatif
+                if (!$stored) {
+                    $stored = $uploadedFile->storeAs('gallery', $fileName, 'public');
+                }
                 
                 // Pastikan path tidak kosong atau "0"
-                if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+                if (empty($stored) || $stored === '0' || trim($stored) === '') {
                     \Log::error('Gallery upload: Invalid stored path', [
-                        'stored_path' => $storedPath,
-                        'original_name' => $uploadedFile->getClientOriginalName(),
+                        'stored_path' => $stored,
+                        'storedPath_var' => $storedPath,
+                        'original_name' => $originalName,
+                        'method_used' => 'Storage::putFileAs',
                     ]);
                     return back()->withErrors(['image' => 'Gagal menyimpan gambar. Path tidak valid.'])->withInput();
                 }
                 
-                // Set path ke data array (replace validated 'image' dengan stored path)
-                $data['image'] = $storedPath;
+                // Gunakan path dari Storage (bisa berbeda dari yang kita set)
+                $finalPath = $stored;
+                
+                // Set path ke data array
+                $data['image'] = $finalPath;
                 
                 // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
-                $fullPath = storage_path('app/public/' . $storedPath);
+                $fullPath = storage_path('app/public/' . $finalPath);
                 
                 // Pastikan file benar-benar ada setelah upload
                 if (!file_exists($fullPath)) {
                     \Log::error('Gallery upload: File not found after store', [
-                        'stored_path' => $storedPath,
+                        'stored_path' => $finalPath,
                         'fullPath' => $fullPath,
+                        'storage_exists' => Storage::disk('public')->exists($finalPath),
                     ]);
                     return back()->withErrors(['image' => 'Gagal menyimpan gambar. File tidak ditemukan setelah upload.'])->withInput();
                 }
