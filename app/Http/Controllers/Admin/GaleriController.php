@@ -98,60 +98,59 @@ class GaleriController extends Controller
                     File::makeDirectory($galleryDir, 0777, true);
                 }
                 @chmod($galleryDir, 0777);
+                @chmod(storage_path('app/public'), 0777);
                 
-                // Coba beberapa method upload secara berurutan
-                $finalPath = null;
+                // Generate unique filename
                 $originalName = $uploadedFile->getClientOriginalName();
-                $extension = $uploadedFile->getClientOriginalExtension() ?: 'jpg';
+                $extension = $uploadedFile->getClientOriginalExtension() ?: pathinfo($originalName, PATHINFO_EXTENSION) ?: 'jpg';
                 $fileName = time() . '_' . uniqid() . '.' . $extension;
+                $targetPath = $galleryDir . '/' . $fileName;
                 
-                // Method 1: Coba store() langsung (paling sederhana)
+                // Method 1: Coba move_uploaded_file langsung (paling reliable)
+                $finalPath = null;
                 try {
-                    $stored = $uploadedFile->store('gallery', 'public');
-                    if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
-                        $finalPath = $stored;
-                        \Log::info('Gallery upload: Success with store()', ['path' => $finalPath]);
+                    if (move_uploaded_file($uploadedFile->getRealPath(), $targetPath)) {
+                        $finalPath = 'gallery/' . $fileName;
+                        @chmod($targetPath, 0777);
+                        \Log::info('Gallery upload: Success with move_uploaded_file()', [
+                            'path' => $finalPath,
+                            'file_exists' => file_exists($targetPath),
+                        ]);
+                    } else {
+                        \Log::warning('Gallery upload: move_uploaded_file() returned false', [
+                            'source' => $uploadedFile->getRealPath(),
+                            'target' => $targetPath,
+                            'source_exists' => file_exists($uploadedFile->getRealPath()),
+                            'target_dir_writable' => is_writable($galleryDir),
+                        ]);
                     }
                 } catch (\Exception $e) {
-                    \Log::warning('Gallery upload: store() failed', ['error' => $e->getMessage()]);
+                    \Log::warning('Gallery upload: move_uploaded_file() exception', ['error' => $e->getMessage()]);
                 }
                 
-                // Method 2: Jika store() gagal, coba storeAs()
+                // Method 2: Jika move_uploaded_file gagal, coba copy
                 if (!$finalPath) {
                     try {
-                        $stored = $uploadedFile->storeAs('gallery', $fileName, 'public');
-                        if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
-                            $finalPath = $stored;
-                            \Log::info('Gallery upload: Success with storeAs()', ['path' => $finalPath]);
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Gallery upload: storeAs() failed', ['error' => $e->getMessage()]);
-                    }
-                }
-                
-                // Method 3: Jika masih gagal, coba Storage facade
-                if (!$finalPath) {
-                    try {
-                        $stored = Storage::disk('public')->putFileAs('gallery', $uploadedFile, $fileName);
-                        if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
-                            $finalPath = $stored;
-                            \Log::info('Gallery upload: Success with Storage::putFileAs()', ['path' => $finalPath]);
-                        }
-                    } catch (\Exception $e) {
-                        \Log::warning('Gallery upload: Storage::putFileAs() failed', ['error' => $e->getMessage()]);
-                    }
-                }
-                
-                // Method 4: Jika semua gagal, coba manual move
-                if (!$finalPath) {
-                    try {
-                        $targetPath = $galleryDir . '/' . $fileName;
-                        if (move_uploaded_file($uploadedFile->getRealPath(), $targetPath)) {
+                        if (copy($uploadedFile->getRealPath(), $targetPath)) {
                             $finalPath = 'gallery/' . $fileName;
-                            \Log::info('Gallery upload: Success with move_uploaded_file()', ['path' => $finalPath]);
+                            @chmod($targetPath, 0777);
+                            \Log::info('Gallery upload: Success with copy()', ['path' => $finalPath]);
                         }
                     } catch (\Exception $e) {
-                        \Log::warning('Gallery upload: move_uploaded_file() failed', ['error' => $e->getMessage()]);
+                        \Log::warning('Gallery upload: copy() failed', ['error' => $e->getMessage()]);
+                    }
+                }
+                
+                // Method 3: Coba store() Laravel
+                if (!$finalPath) {
+                    try {
+                        $stored = $uploadedFile->store('gallery', 'public');
+                        if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
+                            $finalPath = $stored;
+                            \Log::info('Gallery upload: Success with store()', ['path' => $finalPath]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Gallery upload: store() failed', ['error' => $e->getMessage()]);
                     }
                 }
                 
@@ -161,9 +160,13 @@ class GaleriController extends Controller
                         'original_name' => $originalName,
                         'file_size' => $uploadedFile->getSize(),
                         'mime_type' => $uploadedFile->getMimeType(),
+                        'temp_path' => $uploadedFile->getRealPath(),
+                        'temp_exists' => file_exists($uploadedFile->getRealPath()),
+                        'gallery_dir' => $galleryDir,
                         'gallery_dir_exists' => File::exists($galleryDir),
                         'gallery_dir_writable' => is_writable($galleryDir),
                         'storage_path' => storage_path('app/public'),
+                        'storage_writable' => is_writable(storage_path('app/public')),
                     ]);
                     return back()->withErrors(['image' => 'Gagal menyimpan gambar. Silakan coba lagi atau hubungi administrator.'])->withInput();
                 }
