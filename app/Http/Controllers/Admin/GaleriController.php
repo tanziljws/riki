@@ -82,21 +82,58 @@ class GaleriController extends Controller
             $data['category_id'] = $category->id;
             
             // Upload file - GUNAKAN CARA YANG SAMA PERSIS seperti GuruController
-            // Jangan tambahkan validasi ekstra yang tidak ada di GuruController
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('gallery', 'public');
+                $uploadedFile = $request->file('image');
+                
+                // Log sebelum store
+                \Log::info('Gallery upload: Before store', [
+                    'original_name' => $uploadedFile->getClientOriginalName(),
+                    'mime_type' => $uploadedFile->getMimeType(),
+                    'size' => $uploadedFile->getSize(),
+                    'temp_path' => $uploadedFile->getRealPath(),
+                ]);
+                
+                $storedPath = $uploadedFile->store('gallery', 'public');
+                
+                // Log setelah store
+                \Log::info('Gallery upload: After store', [
+                    'stored_path' => $storedPath,
+                    'stored_path_type' => gettype($storedPath),
+                    'stored_path_empty' => empty($storedPath),
+                    'stored_path_equals_zero' => $storedPath === '0',
+                ]);
+                
+                $data['image'] = $storedPath;
                 
                 // Set permission untuk file yang baru di-upload
-                $fullPath = storage_path('app/public/' . $data['image']);
+                $fullPath = storage_path('app/public/' . $storedPath);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
                     @chmod(dirname($fullPath), 0777);
+                    \Log::info('Gallery upload: File exists and permissions set', [
+                        'fullPath' => $fullPath,
+                        'size' => filesize($fullPath),
+                    ]);
+                } else {
+                    \Log::warning('Gallery upload: File not found after store', [
+                        'stored_path' => $storedPath,
+                        'fullPath' => $fullPath,
+                    ]);
                 }
+            } else {
+                \Log::error('Gallery upload: No file in request', [
+                    'has_file' => $request->hasFile('image'),
+                ]);
             }
+            
+            // Log sebelum create
+            \Log::info('Gallery upload: Before create', [
+                'data' => $data,
+            ]);
             
             $gallery = Gallery::create($data);
             
-            // Log untuk memastikan path tersimpan dengan benar
+            // Log setelah create
             \Log::info('Gallery created in database', [
                 'id' => $gallery->id,
                 'title' => $gallery->title,
