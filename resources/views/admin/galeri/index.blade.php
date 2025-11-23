@@ -133,7 +133,7 @@
     document.addEventListener('DOMContentLoaded', function(){
       // Debug: Log semua data gallery ke console
       console.log('=== GALLERY DEBUG INFO ===');
-      @foreach($items as $idx => $it)
+      @foreach($items->items() as $idx => $it)
         console.log('Gallery #{{ $it->id }}:', {
           id: {{ $it->id }},
           title: '{{ $it->title }}',
