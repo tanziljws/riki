@@ -32,5 +32,11 @@ class AppServiceProvider extends ServiceProvider
             || str_contains(env('APP_URL', ''), 'https://')) {
             URL::forceScheme('https');
         }
+        
+        // Override asset() helper untuk storage files - gunakan /files/ sebagai ganti /storage/
+        // Ini untuk bypass 403 error di Railway
+        \Illuminate\Support\Facades\Blade::directive('storage', function ($expression) {
+            return "<?php echo str_replace('/storage/', '/files/', asset('storage/' . {$expression})); ?>";
+        });
     }
 }

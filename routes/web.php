@@ -40,23 +40,12 @@ Route::get('/test-storage-route', function () {
     return response()->json(['status' => 'ok', 'message' => 'Storage route is accessible']);
 });
 
-// Storage route - serve files from storage/app/public
-// Route ini HARUS di atas semua route lain untuk memastikan tidak terblokir
-// Gunakan catch-all pattern untuk match semua path
-Route::get('/storage/{path}', function ($path) {
-    // Debug: log request
-    \Log::info("=== STORAGE ROUTE HIT ===", [
-        'path_param' => $path,
-        'request_uri' => request()->getRequestUri(),
-        'request_path' => request()->path(),
-        'request_url' => request()->url(),
-    ]);
-    // Log untuk debugging - pastikan route dipanggil
+// Helper function untuk serve file dari storage
+$serveStorageFile = function ($path) {
     \Log::info("=== STORAGE ROUTE CALLED ===", [
         'path' => $path, 
         'uri' => request()->getRequestUri(),
         'method' => request()->method(),
-        'headers' => request()->headers->all()
     ]);
     
     try {
@@ -65,27 +54,11 @@ Route::get('/storage/{path}', function ($path) {
         $realPath = realpath($filePath);
         $storagePath = realpath(storage_path('app/public'));
         
-        \Log::info("Storage route processing", [
-            'decoded_path' => $path,
-            'file_path' => $filePath,
-            'real_path' => $realPath,
-            'storage_path' => $storagePath
-        ]);
-        
         if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
-            \Log::warning("Storage route: Path traversal or invalid path", [
-                'real_path' => $realPath,
-                'storage_path' => $storagePath
-            ]);
             abort(404);
         }
         
         if (!file_exists($realPath) || !is_file($realPath)) {
-            \Log::warning("Storage route: File not found", [
-                'real_path' => $realPath,
-                'exists' => file_exists($realPath),
-                'is_file' => is_file($realPath)
-            ]);
             abort(404);
         }
         
@@ -93,19 +66,12 @@ Route::get('/storage/{path}', function ($path) {
         @chmod(dirname($realPath), 0777);
         clearstatcache(true, $realPath);
         
-        \Log::info("Storage route: File found, serving", [
-            'real_path' => $realPath,
-            'size' => filesize($realPath),
-            'mime' => mime_content_type($realPath)
-        ]);
-        
         if (Storage::disk('public')->exists($path)) {
             return Storage::disk('public')->response($path);
         }
         
         $content = @file_get_contents($realPath);
         if ($content === false) {
-            \Log::error("Storage route: Cannot read file content", ['real_path' => $realPath]);
             abort(500);
         }
         
@@ -114,13 +80,18 @@ Route::get('/storage/{path}', function ($path) {
             ->header('Content-Length', strlen($content))
             ->header('Cache-Control', 'public, max-age=31536000');
     } catch (\Exception $e) {
-        \Log::error("Storage route exception", [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
+        \Log::error("Storage route exception", ['error' => $e->getMessage()]);
         abort(500);
     }
-})->where('path', '.*')->name('storage');
+};
+
+// Alternative route dengan path berbeda untuk bypass 403
+// Route ini menggunakan /files/ sebagai ganti /storage/
+Route::get('/files/{path}', $serveStorageFile)->where('path', '.*')->name('files');
+
+// Storage route - serve files from storage/app/public
+// Route ini HARUS di atas semua route lain untuk memastikan tidak terblokir
+Route::get('/storage/{path}', $serveStorageFile)->where('path', '.*')->name('storage');
 
 /*
 |||--------------------------------------------------------------------------
