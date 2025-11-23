@@ -85,15 +85,37 @@ class GaleriController extends Controller
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('gallery', 'public');
                 
-                // Set permission untuk file yang baru di-upload
+                // Set permission untuk file yang baru di-upload (AGGRESIF untuk fix 403/500)
                 $fullPath = storage_path('app/public/' . $data['image']);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
                     @chmod(dirname($fullPath), 0777);
+                    @chmod(storage_path('app/public/gallery'), 0777);
+                    clearstatcache(true, $fullPath);
+                    
+                    // Log untuk debugging
+                    \Log::info('Gallery image stored', [
+                        'path' => $data['image'],
+                        'fullPath' => $fullPath,
+                        'exists' => file_exists($fullPath),
+                        'readable' => is_readable($fullPath),
+                    ]);
+                } else {
+                    \Log::error('Gallery image file not found after store', [
+                        'path' => $data['image'],
+                        'fullPath' => $fullPath,
+                    ]);
                 }
             }
             
-            Gallery::create($data);
+            $gallery = Gallery::create($data);
+            
+            // Log untuk memastikan path tersimpan
+            \Log::info('Gallery created', [
+                'id' => $gallery->id,
+                'title' => $gallery->title,
+                'image_path' => $gallery->image,
+            ]);
         }
 
         return redirect()->route('admin.galeri.index')->with('success', 'Foto berhasil ditambahkan');

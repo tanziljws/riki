@@ -36,23 +36,19 @@
           <tr class="gl-row">
             <td style="padding:12px 14px;border-top:1px solid #eef0f4">
               <div style="width:76px;height:56px;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(2,6,23,.06)" data-gallery-id="{{ $it->id }}" data-image-path="{{ $it->image ?? 'NULL' }}">
-                @php
-                  $imagePath = $it->image ?? null;
-                  $imageUrl = null;
-                  if (!empty($imagePath) && trim($imagePath) !== '') {
-                    $imageUrl = str_replace('/storage/', '/files/', asset('storage/'.$imagePath));
-                  }
-                @endphp
-                @if($imageUrl)
+                @if(!empty($it->image) && trim($it->image) !== '' && $it->image !== '0')
+                  @php
+                    $imageUrl = str_replace('/storage/', '/files/', asset('storage/'.$it->image));
+                  @endphp
                   <img src="{{ $imageUrl }}" 
                        alt="img" 
                        style="width:100%;height:100%;object-fit:cover" 
-                       data-debug-path="{{ $imagePath }}"
+                       data-debug-path="{{ $it->image }}"
                        data-debug-url="{{ $imageUrl }}"
-                       onerror="console.error('Image failed to load for gallery #{{ $it->id }}:', {path: '{{ $imagePath }}', url: this.src, error: event}); this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'76\' height=\'56\'%3E%3Crect fill=\'%23e5e7eb\' width=\'76\' height=\'56\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%2394a3b8\' font-size=\'12\'%3ENo Image%3C/text%3E%3C/svg%3E'; this.onerror=null;"
-                       onload="console.log('Image loaded for gallery #{{ $it->id }}:', {path: '{{ $imagePath }}', url: this.src});">
+                       onerror="console.error('Image failed to load for gallery #{{ $it->id }}:', {path: '{{ $it->image }}', url: this.src}); this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'76\' height=\'56\'%3E%3Crect fill=\'%23e5e7eb\' width=\'76\' height=\'56\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%2394a3b8\' font-size=\'12\'%3ENo Image%3C/text%3E%3C/svg%3E'; this.onerror=null;"
+                       onload="console.log('Image loaded for gallery #{{ $it->id }}:', {path: '{{ $it->image }}', url: this.src});">
                 @else
-                  <div style="width:100%;height:100%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px" data-debug-no-image="true" data-gallery-id="{{ $it->id }}">No Image</div>
+                  <div style="width:100%;height:100%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px" data-debug-no-image="true" data-gallery-id="{{ $it->id }}" data-image-path="{{ $it->image ?? 'NULL' }}">No Image</div>
                 @endif
               </div>
             </td>
