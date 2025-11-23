@@ -31,12 +31,11 @@ for conf in /etc/apache2/sites-available/*.conf; do
     if ! grep -q "<Location.*\/storage>" "$conf"; then
         sed -i '/<\/VirtualHost>/i\
     # Force /storage/ requests to Laravel index.php\
-    <Location /storage>\
+    <LocationMatch ^/storage/>\
         SetHandler application/x-httpd-php\
-        RewriteEngine On\
-        RewriteRule ^(.*)$ /index.php [L,QSA]\
-    </Location>' "$conf" || true
+    </LocationMatch>' "$conf" || true
     fi
+done
 done
 
 # Set permission untuk storage (sangat penting!)
