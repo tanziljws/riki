@@ -46,6 +46,38 @@ Route::get('/', function(){
     return view('user.home', compact('heroSlides'));
 })->name('home');
 
+// Storage route - serve files from storage/app/public
+// Route ini digunakan karena Apache di Railway tidak bisa serve file dari symlink dengan benar
+Route::get('/storage/{path}', function ($path) {
+    // Decode path jika ada encoding
+    $path = urldecode($path);
+    
+    // Security: prevent directory traversal
+    $filePath = storage_path('app/public/' . $path);
+    $realPath = realpath($filePath);
+    $storagePath = realpath(storage_path('app/public'));
+    
+    if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
+        abort(404);
+    }
+    
+    if (!file_exists($realPath) || !is_file($realPath)) {
+        abort(404);
+    }
+    
+    // Set permission untuk memastikan file readable (777 untuk fix 403)
+    @chmod($realPath, 0777);
+    
+    // Set permission untuk parent directory juga
+    $parentDir = dirname($realPath);
+    @chmod($parentDir, 0777);
+    
+    // Serve file dengan MIME type yang benar
+    return response()->file($realPath, [
+        'Content-Type' => mime_content_type($realPath) ?: 'application/octet-stream',
+    ]);
+})->where('path', '.*')->name('storage');
+
 // Tentang Kami
 Route::get('/tentang', fn () => view('user.tentang'))->name('tentang');
 
