@@ -26,15 +26,6 @@ for conf in /etc/apache2/sites-available/*.conf; do
         sed -i '/<Directory \/var\/www\/html\/public>/a\    Require all granted' "$conf" || true
     fi
     
-    # Force semua request ke /storage/ masuk ke Laravel (index.php)
-    # Gunakan Location dengan SetHandler untuk memaksa semua request ke /storage/ masuk ke index.php
-    if ! grep -q "<Location.*\/storage>" "$conf"; then
-        sed -i '/<\/VirtualHost>/i\
-    # Force /storage/ requests to Laravel index.php\
-    <LocationMatch ^/storage/>\
-        SetHandler application/x-httpd-php\
-    </LocationMatch>' "$conf" || true
-    fi
 done
 done
 
