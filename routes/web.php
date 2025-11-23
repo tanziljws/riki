@@ -37,6 +37,9 @@ use Illuminate\Support\Facades\Storage;
 
 // Storage route - serve files from storage/app/public
 Route::get('/storage/{path}', function ($path) {
+    // Log untuk debugging - pastikan route dipanggil
+    \Log::info("Storage route called", ['path' => $path, 'uri' => request()->getRequestUri()]);
+    
     try {
         $path = urldecode($path);
         $filePath = storage_path('app/public/' . $path);

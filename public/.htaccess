@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    # Force /storage/ requests ke Laravel route - HARUS DI ATAS SEMUA RULE LAIN
+    # Ini untuk fix 403 error di Railway - Apache tidak bisa serve file dari symlink
+    RewriteCond %{REQUEST_URI} ^/storage/
+    RewriteRule ^(.*)$ index.php [L,QSA]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -17,11 +22,6 @@
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
-
-    # Force /storage/ requests ke Laravel route (karena Apache 403 issue di Railway)
-    # Route Laravel akan serve file dengan permission yang benar
-    RewriteCond %{REQUEST_URI} ^/storage/
-    RewriteRule ^ index.php [L]
     
     # Biarkan Apache serve file lain langsung jika file exists
     # Send Requests To Front Controller...
