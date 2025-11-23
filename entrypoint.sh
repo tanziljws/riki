@@ -27,11 +27,15 @@ for conf in /etc/apache2/sites-available/*.conf; do
     fi
     
     # Force semua request ke /storage/ masuk ke Laravel (index.php)
-    # Gunakan ScriptAlias untuk memaksa semua request ke /storage/ masuk ke index.php
-    if ! grep -q "ScriptAlias.*\/storage" "$conf"; then
+    # Gunakan Location dengan SetHandler untuk memaksa semua request ke /storage/ masuk ke index.php
+    if ! grep -q "<Location.*\/storage>" "$conf"; then
         sed -i '/<\/VirtualHost>/i\
     # Force /storage/ requests to Laravel index.php\
-    ScriptAlias /storage /var/www/html/public/index.php' "$conf" || true
+    <Location /storage>\
+        SetHandler application/x-httpd-php\
+        RewriteEngine On\
+        RewriteRule ^(.*)$ /index.php [L,QSA]\
+    </Location>' "$conf" || true
     fi
 done
 
