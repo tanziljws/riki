@@ -82,41 +82,57 @@ class GaleriController extends Controller
             $data = $request->only(['title', 'description']);
             $data['category_id'] = $category->id;
 
-            // Upload foto jika ada - PERSIS SEPERTI GURU CONTROLLER
+            // Upload foto jika ada - GUNAKAN Storage facade dengan error handling
             if ($request->hasFile('image')) {
-                $storedPath = $request->file('image')->store('gallery', 'public');
+                $file = $request->file('image');
                 
-                // DEBUG: Log path yang dikembalikan
-                \Log::info('Gallery upload: store() returned', [
-                    'path' => $storedPath,
-                    'type' => gettype($storedPath),
-                    'empty' => empty($storedPath),
-                    'equals_zero' => $storedPath === '0',
-                    'equals_zero_string' => $storedPath === '0',
-                ]);
-                
-                // VALIDASI: Pastikan path tidak kosong atau "0"
-                if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
-                    \Log::error('Gallery upload: store() returned invalid path', [
-                        'path' => $storedPath,
-                        'original_name' => $request->file('image')->getClientOriginalName(),
-                    ]);
-                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. Path tidak valid.'])->withInput();
+                // Pastikan direktori gallery ada dan writable
+                $galleryDir = storage_path('app/public/gallery');
+                if (!is_dir($galleryDir)) {
+                    @mkdir($galleryDir, 0777, true);
                 }
+                @chmod($galleryDir, 0777);
                 
-                $data['image'] = $storedPath;
-                
-                // Set permission untuk file yang baru di-upload
-                $fullPath = storage_path('app/public/' . $data['image']);
-                if (file_exists($fullPath)) {
-                    @chmod($fullPath, 0777);
-                    @chmod(dirname($fullPath), 0777);
-                } else {
-                    \Log::error('Gallery upload: File not found after store', [
-                        'stored_path' => $storedPath,
-                        'full_path' => $fullPath,
+                // Coba gunakan Storage facade langsung (lebih reliable)
+                try {
+                    $storedPath = Storage::disk('public')->putFile('gallery', $file);
+                    
+                    \Log::info('Gallery upload: Storage::putFile() returned', [
+                        'path' => $storedPath,
+                        'type' => gettype($storedPath),
+                        'empty' => empty($storedPath),
+                        'equals_zero' => $storedPath === '0',
                     ]);
-                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. File tidak ditemukan.'])->withInput();
+                    
+                    // VALIDASI: Pastikan path tidak kosong atau "0"
+                    if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+                        \Log::error('Gallery upload: Storage::putFile() returned invalid path', [
+                            'path' => $storedPath,
+                            'original_name' => $file->getClientOriginalName(),
+                        ]);
+                        return back()->withErrors(['image' => 'Gagal menyimpan gambar. Path tidak valid.'])->withInput();
+                    }
+                    
+                    $data['image'] = $storedPath;
+                    
+                    // Set permission untuk file yang baru di-upload
+                    $fullPath = storage_path('app/public/' . $data['image']);
+                    if (file_exists($fullPath)) {
+                        @chmod($fullPath, 0777);
+                        @chmod(dirname($fullPath), 0777);
+                    } else {
+                        \Log::error('Gallery upload: File not found after Storage::putFile()', [
+                            'stored_path' => $storedPath,
+                            'full_path' => $fullPath,
+                        ]);
+                        return back()->withErrors(['image' => 'Gagal menyimpan gambar. File tidak ditemukan.'])->withInput();
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Gallery upload: Exception during Storage::putFile()', [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar: ' . $e->getMessage()])->withInput();
                 }
             } else {
                 \Log::error('Gallery upload: No file in request');
