@@ -86,12 +86,25 @@ class GaleriController extends Controller
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
                 
-                // Pastikan direktori gallery ada dan writable
+                // Pastikan direktori gallery ada dan writable - SET PERMISSION AGGRESIF
                 $galleryDir = storage_path('app/public/gallery');
                 if (!is_dir($galleryDir)) {
                     @mkdir($galleryDir, 0777, true);
                 }
+                // Set permission dengan cara yang lebih agresif
                 @chmod($galleryDir, 0777);
+                @chown($galleryDir, 'www-data'); // Coba set owner ke www-data
+                // Pastikan parent directory juga writable
+                @chmod(storage_path('app/public'), 0777);
+                // Cek apakah benar-benar writable
+                if (!is_writable($galleryDir)) {
+                    \Log::error('Gallery upload: Directory not writable after chmod', [
+                        'dir' => $galleryDir,
+                        'exists' => is_dir($galleryDir),
+                        'permissions' => is_dir($galleryDir) ? substr(sprintf('%o', fileperms($galleryDir)), -4) : 'N/A',
+                        'writable' => is_writable($galleryDir),
+                    ]);
+                }
                 
                 // Generate nama file unik
                 $extension = $file->getClientOriginalExtension() ?: 'jpg';
