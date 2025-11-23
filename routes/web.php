@@ -49,39 +49,31 @@ $serveStorageFile = function ($path) {
         $storagePath = realpath(storage_path('app/public'));
         
         if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
-            \Log::warning("Storage route: Path traversal or invalid", ['path' => $path, 'realPath' => $realPath]);
             abort(404);
         }
         
         if (!file_exists($realPath) || !is_file($realPath)) {
-            \Log::warning("Storage route: File not found", ['path' => $path, 'realPath' => $realPath]);
             abort(404);
         }
         
-        // Set permission untuk memastikan file readable
+        // Set permission untuk memastikan file readable (777 untuk fix 500)
         @chmod($realPath, 0777);
         @chmod(dirname($realPath), 0777);
+        @chmod(storage_path('app/public/gallery'), 0777);
         clearstatcache(true, $realPath);
-        
-        // Cek apakah file readable
-        if (!is_readable($realPath)) {
-            \Log::error("Storage route: File not readable", ['path' => $path, 'realPath' => $realPath]);
-            abort(500, 'File not readable');
-        }
         
         // Coba gunakan Storage facade dulu
         if (Storage::disk('public')->exists($path)) {
             try {
                 return Storage::disk('public')->response($path);
             } catch (\Exception $e) {
-                \Log::warning("Storage facade failed, using file_get_contents", ['error' => $e->getMessage()]);
+                // Fallback jika Storage facade gagal
             }
         }
         
         // Fallback: gunakan file_get_contents
         $content = @file_get_contents($realPath);
         if ($content === false) {
-            \Log::error("Storage route: Cannot read file", ['path' => $path, 'realPath' => $realPath]);
             abort(500, 'Cannot read file');
         }
         
@@ -92,12 +84,7 @@ $serveStorageFile = function ($path) {
             ->header('Content-Length', strlen($content))
             ->header('Cache-Control', 'public, max-age=31536000');
     } catch (\Exception $e) {
-        \Log::error("Storage route exception", [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'path' => $path ?? 'unknown'
-        ]);
-        abort(500, 'Error serving file: ' . $e->getMessage());
+        abort(500, 'Error serving file');
     }
 };
 
