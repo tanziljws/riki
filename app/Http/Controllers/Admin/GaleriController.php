@@ -99,33 +99,74 @@ class GaleriController extends Controller
                 }
                 @chmod($galleryDir, 0777);
                 
-                // Upload file menggunakan Storage facade untuk lebih reliable
+                // Coba beberapa method upload secara berurutan
+                $finalPath = null;
                 $originalName = $uploadedFile->getClientOriginalName();
-                $extension = $uploadedFile->getClientOriginalExtension();
+                $extension = $uploadedFile->getClientOriginalExtension() ?: 'jpg';
                 $fileName = time() . '_' . uniqid() . '.' . $extension;
-                $storedPath = 'gallery/' . $fileName;
                 
-                // Upload menggunakan Storage facade
-                $stored = Storage::disk('public')->putFileAs('gallery', $uploadedFile, $fileName);
-                
-                // Jika Storage::putFileAs gagal, coba method alternatif
-                if (!$stored) {
-                    $stored = $uploadedFile->storeAs('gallery', $fileName, 'public');
+                // Method 1: Coba store() langsung (paling sederhana)
+                try {
+                    $stored = $uploadedFile->store('gallery', 'public');
+                    if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
+                        $finalPath = $stored;
+                        \Log::info('Gallery upload: Success with store()', ['path' => $finalPath]);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Gallery upload: store() failed', ['error' => $e->getMessage()]);
                 }
                 
-                // Pastikan path tidak kosong atau "0"
-                if (empty($stored) || $stored === '0' || trim($stored) === '') {
-                    \Log::error('Gallery upload: Invalid stored path', [
-                        'stored_path' => $stored,
-                        'storedPath_var' => $storedPath,
+                // Method 2: Jika store() gagal, coba storeAs()
+                if (!$finalPath) {
+                    try {
+                        $stored = $uploadedFile->storeAs('gallery', $fileName, 'public');
+                        if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
+                            $finalPath = $stored;
+                            \Log::info('Gallery upload: Success with storeAs()', ['path' => $finalPath]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Gallery upload: storeAs() failed', ['error' => $e->getMessage()]);
+                    }
+                }
+                
+                // Method 3: Jika masih gagal, coba Storage facade
+                if (!$finalPath) {
+                    try {
+                        $stored = Storage::disk('public')->putFileAs('gallery', $uploadedFile, $fileName);
+                        if (!empty($stored) && $stored !== '0' && trim($stored) !== '') {
+                            $finalPath = $stored;
+                            \Log::info('Gallery upload: Success with Storage::putFileAs()', ['path' => $finalPath]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Gallery upload: Storage::putFileAs() failed', ['error' => $e->getMessage()]);
+                    }
+                }
+                
+                // Method 4: Jika semua gagal, coba manual move
+                if (!$finalPath) {
+                    try {
+                        $targetPath = $galleryDir . '/' . $fileName;
+                        if (move_uploaded_file($uploadedFile->getRealPath(), $targetPath)) {
+                            $finalPath = 'gallery/' . $fileName;
+                            \Log::info('Gallery upload: Success with move_uploaded_file()', ['path' => $finalPath]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Gallery upload: move_uploaded_file() failed', ['error' => $e->getMessage()]);
+                    }
+                }
+                
+                // Jika semua method gagal
+                if (!$finalPath || empty($finalPath) || $finalPath === '0' || trim($finalPath) === '') {
+                    \Log::error('Gallery upload: All upload methods failed', [
                         'original_name' => $originalName,
-                        'method_used' => 'Storage::putFileAs',
+                        'file_size' => $uploadedFile->getSize(),
+                        'mime_type' => $uploadedFile->getMimeType(),
+                        'gallery_dir_exists' => File::exists($galleryDir),
+                        'gallery_dir_writable' => is_writable($galleryDir),
+                        'storage_disk_public_root' => Storage::disk('public')->getDriver()->getAdapter()->getPathPrefix(),
                     ]);
-                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. Path tidak valid.'])->withInput();
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. Silakan coba lagi atau hubungi administrator.'])->withInput();
                 }
-                
-                // Gunakan path dari Storage (bisa berbeda dari yang kita set)
-                $finalPath = $stored;
                 
                 // Set path ke data array
                 $data['image'] = $finalPath;
