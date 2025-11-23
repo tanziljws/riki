@@ -84,17 +84,59 @@ class GaleriController extends Controller
 
             // Upload foto jika ada - PERSIS SEPERTI GURU CONTROLLER
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('gallery', 'public');
+                $storedPath = $request->file('image')->store('gallery', 'public');
+                
+                // DEBUG: Log path yang dikembalikan
+                \Log::info('Gallery upload: store() returned', [
+                    'path' => $storedPath,
+                    'type' => gettype($storedPath),
+                    'empty' => empty($storedPath),
+                    'equals_zero' => $storedPath === '0',
+                    'equals_zero_string' => $storedPath === '0',
+                ]);
+                
+                // VALIDASI: Pastikan path tidak kosong atau "0"
+                if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+                    \Log::error('Gallery upload: store() returned invalid path', [
+                        'path' => $storedPath,
+                        'original_name' => $request->file('image')->getClientOriginalName(),
+                    ]);
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. Path tidak valid.'])->withInput();
+                }
+                
+                $data['image'] = $storedPath;
                 
                 // Set permission untuk file yang baru di-upload
                 $fullPath = storage_path('app/public/' . $data['image']);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
                     @chmod(dirname($fullPath), 0777);
+                } else {
+                    \Log::error('Gallery upload: File not found after store', [
+                        'stored_path' => $storedPath,
+                        'full_path' => $fullPath,
+                    ]);
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. File tidak ditemukan.'])->withInput();
                 }
+            } else {
+                \Log::error('Gallery upload: No file in request');
+                return back()->withErrors(['image' => 'Gambar wajib diunggah.'])->withInput();
             }
 
-            Gallery::create($data);
+            // DEBUG: Log data sebelum create
+            \Log::info('Gallery upload: Before create', [
+                'data' => $data,
+                'image_path' => $data['image'] ?? 'NOT SET',
+            ]);
+
+            $gallery = Gallery::create($data);
+            
+            // DEBUG: Log setelah create
+            \Log::info('Gallery upload: After create', [
+                'id' => $gallery->id,
+                'image_path_in_db' => $gallery->image,
+                'image_path_valid' => !empty($gallery->image) && $gallery->image !== '0',
+            ]);
         }
 
         return redirect()->route('admin.galeri.index')->with('success', 'Foto berhasil ditambahkan');
