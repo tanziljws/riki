@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
         
         // Override asset() helper untuk storage files - gunakan /files/ sebagai ganti /storage/
         // Ini untuk bypass 403 error di Railway
-        // Buat helper function untuk storage asset yang otomatis replace path
+        // Buat helper function untuk storage asset
         if (!function_exists('storage_asset')) {
             function storage_asset($path) {
                 $url = asset('storage/' . ltrim($path, '/'));
@@ -43,14 +43,12 @@ class AppServiceProvider extends ServiceProvider
             }
         }
         
-        // Override asset() helper secara global untuk otomatis replace /storage/ dengan /files/
-        // Hanya untuk URL yang mengandung /storage/
-        \Illuminate\Support\Facades\URL::macro('asset', function ($path) {
-            $url = asset($path);
-            if (str_contains($url, '/storage/')) {
-                return str_replace('/storage/', '/files/', $url);
-            }
-            return $url;
+        // Override response untuk otomatis replace /storage/ dengan /files/ di semua HTML response
+        // Ini untuk bypass 403 error di Railway tanpa perlu update semua view
+        $this->app->bind(\Illuminate\Contracts\Http\Kernel::class, function ($app) {
+            $kernel = new \App\Http\Kernel($app, $app['router']);
+            $kernel->pushMiddleware(\App\Http\Middleware\ReplaceStoragePath::class);
+            return $kernel;
         });
     }
 }

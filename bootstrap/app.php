@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply to all web routes
         $middleware->web(append: [
             'setlocale',
+            \App\Http\Middleware\ReplaceStoragePath::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
