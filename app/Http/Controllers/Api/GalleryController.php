@@ -35,17 +35,113 @@ class GalleryController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
-            'category_id' => 'required|exists:categories,id',
+        // Log request untuk debugging
+        \Log::info('Gallery API store request', [
+            'has_file' => $request->hasFile('image'),
+            'all_files' => array_keys($request->allFiles()),
+            'content_type' => $request->header('Content-Type'),
+            'title' => $request->input('title'),
+            'category_id' => $request->input('category_id'),
+            'image_type' => gettype($request->input('image')),
         ]);
 
-        // Handle file upload
+        // Check if image is sent as base64 string instead of file
+        $imageInput = $request->input('image');
+        if (is_string($imageInput) && !$request->hasFile('image')) {
+            // Handle base64 image
+            if (preg_match('/^data:image\/(\w+);base64,/', $imageInput, $matches)) {
+                \Log::info('Gallery API: Detected base64 image');
+                $imageData = base64_decode(substr($imageInput, strpos($imageInput, ',') + 1));
+                $extension = $matches[1];
+                $fileName = uniqid() . '.' . $extension;
+                $storedPath = 'gallery/' . $fileName;
+                $fullPath = storage_path('app/public/' . $storedPath);
+                
+                // Ensure directory exists
+                if (!file_exists(storage_path('app/public/gallery'))) {
+                    mkdir(storage_path('app/public/gallery'), 0755, true);
+                }
+                
+                file_put_contents($fullPath, $imageData);
+                @chmod($fullPath, 0644);
+                
+                $validated = $request->validate([
+                    'title' => 'required|string|max:255',
+                    'description' => 'nullable|string',
+                    'category_id' => 'required|exists:categories,id',
+                ]);
+                $validated['image'] = $storedPath;
+                
+                $gallery = Gallery::create($validated);
+                
+                $imageUrl = asset('storage/' . $gallery->image);
+                if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
+                    $imageUrl = str_replace('http://', 'https://', $imageUrl);
+                }
+                
+                return response()->json([
+                    'message' => 'Gallery berhasil dibuat',
+                    'data' => [
+                        'id' => $gallery->id,
+                        'title' => $gallery->title,
+                        'description' => $gallery->description,
+                        'image_path' => $gallery->image,
+                        'image_url' => $imageUrl,
+                        'category_id' => $gallery->category_id,
+                        'created_at' => $gallery->created_at,
+                        'updated_at' => $gallery->updated_at,
+                    ]
+                ], 201);
+            }
+        }
+
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+                'category_id' => 'required|exists:categories,id',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Gallery API validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->except(['image']),
+            ]);
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        // Handle file upload - GUNAKAN CARA YANG SAMA SEPERTI GURU/JURUSAN CONTROLLER
         if ($request->hasFile('image')) {
             $uploadedFile = $request->file('image');
+            
+            \Log::info('Gallery API file upload detected', [
+                'original_name' => $uploadedFile->getClientOriginalName(),
+                'mime_type' => $uploadedFile->getMimeType(),
+                'size' => $uploadedFile->getSize(),
+                'is_valid' => $uploadedFile->isValid(),
+            ]);
+            
+            if (!$uploadedFile->isValid()) {
+                \Log::error('Gallery API: Invalid file upload', [
+                    'error' => $uploadedFile->getError(),
+                    'error_message' => $uploadedFile->getErrorMessage(),
+                ]);
+                return response()->json([
+                    'message' => 'File upload tidak valid',
+                    'error' => 'Invalid file upload'
+                ], 422);
+            }
+            
+            // Store file - GUNAKAN CARA YANG SAMA SEPERTI GURU CONTROLLER
             $storedPath = $uploadedFile->store('gallery', 'public');
+            
+            \Log::info('Gallery API file stored', [
+                'stored_path' => $storedPath,
+                'full_path' => storage_path('app/public/' . $storedPath),
+            ]);
             
             // Validate stored path
             if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
@@ -57,27 +153,71 @@ class GalleryController extends Controller
                 ]);
                 return response()->json([
                     'message' => 'Gagal menyimpan gambar. Silakan coba lagi.',
-                    'error' => 'Invalid file path returned'
+                    'error' => 'Invalid file path returned',
+                    'debug' => [
+                        'stored_path' => $storedPath,
+                        'storage_exists' => Storage::disk('public')->exists($storedPath),
+                    ]
+                ], 422);
+            }
+            
+            // Verify file exists after storage
+            $fullPath = storage_path('app/public/' . $storedPath);
+            if (!file_exists($fullPath)) {
+                \Log::error('Gallery API: File not found after store', [
+                    'stored_path' => $storedPath,
+                    'full_path' => $fullPath,
+                    'storage_exists' => Storage::disk('public')->exists($storedPath),
+                ]);
+                return response()->json([
+                    'message' => 'Gagal menyimpan gambar. File tidak ditemukan setelah upload.',
+                    'error' => 'File not found after storage'
                 ], 422);
             }
             
             // Set permission untuk file yang baru di-upload
-            $fullPath = storage_path('app/public/' . $storedPath);
-            if (file_exists($fullPath)) {
-                @chmod($fullPath, 0644);
-                @chmod(dirname($fullPath), 0755);
-                @chmod(storage_path('app/public/gallery'), 0755);
-            }
+            @chmod($fullPath, 0644);
+            @chmod(dirname($fullPath), 0755);
+            @chmod(storage_path('app/public/gallery'), 0755);
             
             $validated['image'] = $storedPath;
         } else {
+            \Log::error('Gallery API: No file in request', [
+                'has_file' => $request->hasFile('image'),
+                'all_files' => $request->allFiles(),
+                'request_keys' => array_keys($request->all()),
+            ]);
             return response()->json([
                 'message' => 'Gambar wajib diunggah',
-                'error' => 'No image file provided'
+                'error' => 'No image file provided',
+                'debug' => [
+                    'has_file' => $request->hasFile('image'),
+                    'content_type' => $request->header('Content-Type'),
+                ]
             ], 422);
         }
 
-        $gallery = Gallery::create($validated);
+        // Create gallery
+        try {
+            $gallery = Gallery::create($validated);
+            \Log::info('Gallery created successfully', [
+                'id' => $gallery->id,
+                'image_path' => $gallery->image,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gallery API: Failed to create gallery', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            // Delete uploaded file if gallery creation fails
+            if (isset($storedPath) && Storage::disk('public')->exists($storedPath)) {
+                Storage::disk('public')->delete($storedPath);
+            }
+            return response()->json([
+                'message' => 'Gagal membuat gallery',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
         // Get full URL for the image
         $imageUrl = asset('storage/' . $gallery->image);
