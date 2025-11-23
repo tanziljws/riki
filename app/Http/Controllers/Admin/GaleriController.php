@@ -54,13 +54,19 @@ class GaleriController extends Controller
 
             foreach ($files as $idx => $img) {
                 $path = $img->store('gallery', 'public');
-                // Set permission untuk file yang baru di-upload (777 untuk fix 403)
+                // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
                 $fullPath = storage_path('app/public/' . $path);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
-                    // Pastikan parent directory juga readable
+                    // Pastikan semua parent directories juga readable
                     $parentDir = dirname($fullPath);
-                    @chmod($parentDir, 0777);
+                    while ($parentDir !== storage_path('app/public')) {
+                        @chmod($parentDir, 0777);
+                        $parentDir = dirname($parentDir);
+                    }
+                    @chmod(storage_path('app/public'), 0777);
+                    @chmod(storage_path('app/public/gallery'), 0777);
+                    clearstatcache(true, $fullPath);
                 }
                 Gallery::create([
                     'title' => 'Home Slide',
@@ -79,13 +85,19 @@ class GaleriController extends Controller
             $data['category_id'] = $category->id;
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('gallery', 'public');
-                // Set permission untuk file yang baru di-upload (777 untuk fix 403)
+                // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
                 $fullPath = storage_path('app/public/' . $data['image']);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
-                    // Pastikan parent directory juga readable
+                    // Pastikan semua parent directories juga readable
                     $parentDir = dirname($fullPath);
-                    @chmod($parentDir, 0777);
+                    while ($parentDir !== storage_path('app/public')) {
+                        @chmod($parentDir, 0777);
+                        $parentDir = dirname($parentDir);
+                    }
+                    @chmod(storage_path('app/public'), 0777);
+                    @chmod(storage_path('app/public/gallery'), 0777);
+                    clearstatcache(true, $fullPath);
                 }
             }
             Gallery::create($data);
