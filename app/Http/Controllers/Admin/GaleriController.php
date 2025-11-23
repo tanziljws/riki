@@ -72,21 +72,17 @@ class GaleriController extends Controller
                 ]);
             }
         } else {
-            // Default single upload flow - GUNAKAN CARA YANG SAMA SEPERTI GURU/JURUSAN CONTROLLER
-            // Validasi TANPA image dulu, karena image akan di-handle terpisah
-            $data = $request->validate([
+            // Default single upload flow - GUNAKAN CARA YANG SAMA PERSIS SEPERTI GURU CONTROLLER
+            $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
-            ]);
-            
-            // Validasi image secara terpisah
-            $request->validate([
                 'image' => 'required|image|max:4096',
             ]);
-            
+
+            $data = $request->only(['title', 'description']);
             $data['category_id'] = $category->id;
-            
-            // Upload file - GUNAKAN CARA YANG SAMA PERSIS seperti GuruController
+
+            // Upload foto jika ada - PERSIS SEPERTI GURU CONTROLLER
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image')->store('gallery', 'public');
                 
@@ -97,7 +93,7 @@ class GaleriController extends Controller
                     @chmod(dirname($fullPath), 0777);
                 }
             }
-            
+
             Gallery::create($data);
         }
 
