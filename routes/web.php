@@ -35,6 +35,11 @@ use Illuminate\Support\Facades\Storage;
 ||||--------------------------------------------------------------------------
 */
 
+// Test endpoint untuk memastikan route bekerja
+Route::get('/test-storage-route', function () {
+    return response()->json(['status' => 'ok', 'message' => 'Storage route is accessible']);
+});
+
 // Storage route - serve files from storage/app/public
 // Route ini HARUS di atas semua route lain untuk memastikan tidak terblokir
 Route::get('/storage/{path}', function ($path) {
