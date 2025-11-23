@@ -7,8 +7,8 @@
 
     # Force /storage/ requests ke Laravel route - HARUS DI ATAS SEMUA RULE LAIN
     # Ini untuk fix 403 error di Railway - Apache tidak bisa serve file dari symlink
-    # Gunakan REQUEST_URI untuk match semua request ke /storage/ termasuk subdirectories
-    RewriteCond %{REQUEST_URI} ^/storage
+    # Match semua request yang dimulai dengan /storage/ dan arahkan ke Laravel
+    RewriteCond %{REQUEST_URI} ^/storage/
     RewriteRule ^storage/(.*)$ index.php [L,QSA]
 
     # Handle Authorization Header
