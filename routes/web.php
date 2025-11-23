@@ -49,33 +49,64 @@ Route::get('/', function(){
 // Storage route - serve files from storage/app/public
 // Route ini digunakan karena Apache di Railway tidak bisa serve file dari symlink dengan benar
 Route::get('/storage/{path}', function ($path) {
-    // Decode path jika ada encoding
-    $path = urldecode($path);
-    
-    // Security: prevent directory traversal
-    $filePath = storage_path('app/public/' . $path);
-    $realPath = realpath($filePath);
-    $storagePath = realpath(storage_path('app/public'));
-    
-    if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
-        abort(404);
+    try {
+        // Decode path jika ada encoding
+        $path = urldecode($path);
+        
+        // Security: prevent directory traversal
+        $filePath = storage_path('app/public/' . $path);
+        $realPath = realpath($filePath);
+        $storagePath = realpath(storage_path('app/public'));
+        
+        if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
+            \Log::warning("Storage route: Path traversal attempt or invalid path", ['path' => $path, 'realPath' => $realPath]);
+            abort(404);
+        }
+        
+        if (!file_exists($realPath) || !is_file($realPath)) {
+            \Log::warning("Storage route: File not found", ['path' => $path, 'realPath' => $realPath]);
+            abort(404);
+        }
+        
+        // Set permission untuk memastikan file readable (777 untuk fix 403)
+        @chmod($realPath, 0777);
+        
+        // Set permission untuk parent directory juga
+        $parentDir = dirname($realPath);
+        @chmod($parentDir, 0777);
+        
+        // Clear stat cache untuk memastikan permission update terdeteksi
+        clearstatcache(true, $realPath);
+        
+        // Cek apakah file readable
+        if (!is_readable($realPath)) {
+            \Log::error("Storage route: File not readable after chmod", ['path' => $path, 'realPath' => $realPath, 'perms' => substr(sprintf('%o', fileperms($realPath)), -4)]);
+            abort(500, 'File not readable');
+        }
+        
+        // Gunakan Storage facade untuk serve file (lebih reliable)
+        if (\Storage::disk('public')->exists($path)) {
+            return \Storage::disk('public')->response($path);
+        }
+        
+        // Fallback: serve langsung dengan file_get_contents
+        $content = file_get_contents($realPath);
+        if ($content === false) {
+            \Log::error("Storage route: Cannot read file content", ['path' => $path, 'realPath' => $realPath]);
+            abort(500, 'Cannot read file');
+        }
+        
+        $mimeType = mime_content_type($realPath) ?: 'application/octet-stream';
+        
+        return response($content, 200)
+            ->header('Content-Type', $mimeType)
+            ->header('Content-Length', strlen($content))
+            ->header('Cache-Control', 'public, max-age=31536000');
+            
+    } catch (\Exception $e) {
+        \Log::error("Storage route error", ['path' => $path ?? 'unknown', 'error' => $e->getMessage()]);
+        abort(500, 'Error serving file');
     }
-    
-    if (!file_exists($realPath) || !is_file($realPath)) {
-        abort(404);
-    }
-    
-    // Set permission untuk memastikan file readable (777 untuk fix 403)
-    @chmod($realPath, 0777);
-    
-    // Set permission untuk parent directory juga
-    $parentDir = dirname($realPath);
-    @chmod($parentDir, 0777);
-    
-    // Serve file dengan MIME type yang benar
-    return response()->file($realPath, [
-        'Content-Type' => mime_content_type($realPath) ?: 'application/octet-stream',
-    ]);
 })->where('path', '.*')->name('storage');
 
 // Tentang Kami
