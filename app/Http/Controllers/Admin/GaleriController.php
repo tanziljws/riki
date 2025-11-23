@@ -77,30 +77,43 @@ class GaleriController extends Controller
             ]);
             $data['category_id'] = $category->id;
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('gallery', 'public');
+                $uploadedFile = $request->file('image');
+                $data['image'] = $uploadedFile->store('gallery', 'public');
+                
                 // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
-                // Lakukan langsung tanpa banyak check untuk avoid timeout
                 $fullPath = storage_path('app/public/' . $data['image']);
                 @chmod($fullPath, 0777);
                 @chmod(dirname($fullPath), 0777);
                 @chmod(storage_path('app/public/gallery'), 0777);
                 clearstatcache(true, $fullPath);
                 
-                // Log untuk debugging
+                // Log untuk debugging dengan detail lengkap
                 \Log::info('Gallery image uploaded', [
-                    'path' => $data['image'],
+                    'original_name' => $uploadedFile->getClientOriginalName(),
+                    'mime_type' => $uploadedFile->getMimeType(),
+                    'size' => $uploadedFile->getSize(),
+                    'stored_path' => $data['image'],
                     'fullPath' => $fullPath,
                     'exists' => file_exists($fullPath),
                     'readable' => is_readable($fullPath),
+                    'permissions' => file_exists($fullPath) ? substr(sprintf('%o', fileperms($fullPath)), -4) : 'N/A',
+                ]);
+            } else {
+                \Log::warning('Gallery created WITHOUT image file', [
+                    'request_has_file' => $request->hasFile('image'),
+                    'request_files' => $request->allFiles(),
                 ]);
             }
+            
             $gallery = Gallery::create($data);
             
             // Log untuk memastikan data tersimpan
-            \Log::info('Gallery created', [
+            \Log::info('Gallery created in database', [
                 'id' => $gallery->id,
                 'title' => $gallery->title,
-                'image' => $gallery->image,
+                'image_path_in_db' => $gallery->image,
+                'image_empty_check' => empty($gallery->image),
+                'category_id' => $gallery->category_id,
             ]);
         }
 

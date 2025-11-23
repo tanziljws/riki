@@ -40,6 +40,61 @@ Route::get('/test-storage-route', function () {
     return response()->json(['status' => 'ok', 'message' => 'Storage route is accessible']);
 });
 
+// Debug endpoint untuk cek gallery data
+Route::get('/debug/gallery/{id?}', function ($id = null) {
+    $query = \App\Models\Gallery::with('category');
+    if ($id) {
+        $gallery = $query->find($id);
+        if (!$gallery) {
+            return response()->json(['error' => 'Gallery not found'], 404);
+        }
+        
+        $imagePath = $gallery->image;
+        $fullPath = storage_path('app/public/' . $imagePath);
+        $exists = file_exists($fullPath);
+        $readable = $exists && is_readable($fullPath);
+        
+        return response()->json([
+            'gallery' => [
+                'id' => $gallery->id,
+                'title' => $gallery->title,
+                'image_path' => $imagePath,
+                'image_empty' => empty($imagePath),
+                'category' => $gallery->category ? $gallery->category->name : null,
+            ],
+            'file' => [
+                'full_path' => $fullPath,
+                'exists' => $exists,
+                'readable' => $readable,
+                'size' => $exists ? filesize($fullPath) : null,
+                'permissions' => $exists ? substr(sprintf('%o', fileperms($fullPath)), -4) : null,
+            ],
+            'url' => [
+                'storage_url' => asset('storage/' . $imagePath),
+                'files_url' => str_replace('/storage/', '/files/', asset('storage/' . $imagePath)),
+            ]
+        ]);
+    } else {
+        // Return last 10 galleries
+        $galleries = $query->orderBy('id', 'desc')->take(10)->get();
+        return response()->json([
+            'recent_galleries' => $galleries->map(function($g) {
+                $imagePath = $g->image;
+                $fullPath = storage_path('app/public/' . $imagePath);
+                return [
+                    'id' => $g->id,
+                    'title' => $g->title,
+                    'image_path' => $imagePath,
+                    'image_empty' => empty($imagePath),
+                    'file_exists' => file_exists($fullPath),
+                    'category' => $g->category ? $g->category->name : null,
+                    'created_at' => $g->created_at,
+                ];
+            })
+        ]);
+    }
+})->middleware('auth');
+
 // Helper function untuk serve file dari storage
 $serveStorageFile = function ($path) {
     try {
