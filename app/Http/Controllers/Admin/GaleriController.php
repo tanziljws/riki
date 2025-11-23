@@ -83,10 +83,25 @@ class GaleriController extends Controller
             
             // Upload file menggunakan cara yang SAMA PERSIS seperti GuruController
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('gallery', 'public');
+                $uploadedFile = $request->file('image');
+                $storedPath = $uploadedFile->store('gallery', 'public');
+                
+                // PASTIKAN path tidak kosong atau "0" sebelum disimpan
+                if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+                    \Log::error('Gallery upload: store() returned invalid path', [
+                        'stored_path' => $storedPath,
+                        'original_name' => $uploadedFile->getClientOriginalName(),
+                        'file_size' => $uploadedFile->getSize(),
+                        'mime_type' => $uploadedFile->getMimeType(),
+                    ]);
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. Silakan coba lagi.'])->withInput();
+                }
+                
+                // Set path ke data array
+                $data['image'] = $storedPath;
                 
                 // Set permission untuk file yang baru di-upload (AGGRESIF untuk fix 403/500)
-                $fullPath = storage_path('app/public/' . $data['image']);
+                $fullPath = storage_path('app/public/' . $storedPath);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
                     @chmod(dirname($fullPath), 0777);
@@ -94,27 +109,37 @@ class GaleriController extends Controller
                     clearstatcache(true, $fullPath);
                     
                     // Log untuk debugging
-                    \Log::info('Gallery image stored', [
-                        'path' => $data['image'],
+                    \Log::info('Gallery image stored successfully', [
+                        'path' => $storedPath,
                         'fullPath' => $fullPath,
                         'exists' => file_exists($fullPath),
                         'readable' => is_readable($fullPath),
+                        'size' => filesize($fullPath),
                     ]);
                 } else {
                     \Log::error('Gallery image file not found after store', [
-                        'path' => $data['image'],
+                        'path' => $storedPath,
                         'fullPath' => $fullPath,
+                        'storage_exists' => Storage::disk('public')->exists($storedPath),
                     ]);
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. File tidak ditemukan.'])->withInput();
                 }
+            } else {
+                \Log::error('Gallery upload: No file in request', [
+                    'has_file' => $request->hasFile('image'),
+                    'all_files' => $request->allFiles(),
+                ]);
+                return back()->withErrors(['image' => 'Gambar wajib diunggah'])->withInput();
             }
             
             $gallery = Gallery::create($data);
             
-            // Log untuk memastikan path tersimpan
-            \Log::info('Gallery created', [
+            // Log untuk memastikan path tersimpan dengan benar
+            \Log::info('Gallery created in database', [
                 'id' => $gallery->id,
                 'title' => $gallery->title,
-                'image_path' => $gallery->image,
+                'image_path_in_db' => $gallery->image,
+                'image_path_valid' => !empty($gallery->image) && $gallery->image !== '0',
             ]);
         }
 
