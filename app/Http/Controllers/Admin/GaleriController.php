@@ -73,9 +73,14 @@ class GaleriController extends Controller
             }
         } else {
             // Default single upload flow - GUNAKAN CARA YANG SAMA SEPERTI GURU/JURUSAN CONTROLLER
+            // Validasi TANPA image dulu, karena image akan di-handle terpisah
             $data = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
+            ]);
+            
+            // Validasi image secara terpisah
+            $request->validate([
                 'image' => 'required|image|max:4096',
             ]);
             
@@ -83,63 +88,17 @@ class GaleriController extends Controller
             
             // Upload file - GUNAKAN CARA YANG SAMA PERSIS seperti GuruController
             if ($request->hasFile('image')) {
-                $uploadedFile = $request->file('image');
-                
-                // Log sebelum store
-                \Log::info('Gallery upload: Before store', [
-                    'original_name' => $uploadedFile->getClientOriginalName(),
-                    'mime_type' => $uploadedFile->getMimeType(),
-                    'size' => $uploadedFile->getSize(),
-                    'temp_path' => $uploadedFile->getRealPath(),
-                ]);
-                
-                $storedPath = $uploadedFile->store('gallery', 'public');
-                
-                // Log setelah store
-                \Log::info('Gallery upload: After store', [
-                    'stored_path' => $storedPath,
-                    'stored_path_type' => gettype($storedPath),
-                    'stored_path_empty' => empty($storedPath),
-                    'stored_path_equals_zero' => $storedPath === '0',
-                ]);
-                
-                $data['image'] = $storedPath;
+                $data['image'] = $request->file('image')->store('gallery', 'public');
                 
                 // Set permission untuk file yang baru di-upload
-                $fullPath = storage_path('app/public/' . $storedPath);
+                $fullPath = storage_path('app/public/' . $data['image']);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
                     @chmod(dirname($fullPath), 0777);
-                    \Log::info('Gallery upload: File exists and permissions set', [
-                        'fullPath' => $fullPath,
-                        'size' => filesize($fullPath),
-                    ]);
-                } else {
-                    \Log::warning('Gallery upload: File not found after store', [
-                        'stored_path' => $storedPath,
-                        'fullPath' => $fullPath,
-                    ]);
                 }
-            } else {
-                \Log::error('Gallery upload: No file in request', [
-                    'has_file' => $request->hasFile('image'),
-                ]);
             }
             
-            // Log sebelum create
-            \Log::info('Gallery upload: Before create', [
-                'data' => $data,
-            ]);
-            
-            $gallery = Gallery::create($data);
-            
-            // Log setelah create
-            \Log::info('Gallery created in database', [
-                'id' => $gallery->id,
-                'title' => $gallery->title,
-                'image_path_in_db' => $gallery->image,
-                'image_path_valid' => !empty($gallery->image) && $gallery->image !== '0',
-            ]);
+            Gallery::create($data);
         }
 
         return redirect()->route('admin.galeri.index')->with('success', 'Foto berhasil ditambahkan');
