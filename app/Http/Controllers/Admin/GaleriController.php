@@ -70,41 +70,65 @@ class GaleriController extends Controller
             }
         } else {
             // Default single upload flow
+            // Validasi TANPA image dulu, karena image akan di-handle terpisah
             $data = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'nullable|string',
+            ]);
+            
+            // Validasi image secara terpisah
+            $request->validate([
                 'image' => 'required|image|max:4096',
             ]);
+            
             $data['category_id'] = $category->id;
-            if ($request->hasFile('image')) {
-                $uploadedFile = $request->file('image');
-                $data['image'] = $uploadedFile->store('gallery', 'public');
-                
-                // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
-                $fullPath = storage_path('app/public/' . $data['image']);
-                @chmod($fullPath, 0777);
-                @chmod(dirname($fullPath), 0777);
-                @chmod(storage_path('app/public/gallery'), 0777);
-                clearstatcache(true, $fullPath);
-                
-                // Log untuk debugging dengan detail lengkap
-                \Log::info('Gallery image uploaded', [
-                    'original_name' => $uploadedFile->getClientOriginalName(),
-                    'mime_type' => $uploadedFile->getMimeType(),
-                    'size' => $uploadedFile->getSize(),
-                    'stored_path' => $data['image'],
-                    'fullPath' => $fullPath,
-                    'exists' => file_exists($fullPath),
-                    'readable' => is_readable($fullPath),
-                    'permissions' => file_exists($fullPath) ? substr(sprintf('%o', fileperms($fullPath)), -4) : 'N/A',
-                ]);
-            } else {
-                \Log::warning('Gallery created WITHOUT image file', [
-                    'request_has_file' => $request->hasFile('image'),
+            
+            // Pastikan file benar-benar ada sebelum upload
+            if (!$request->hasFile('image')) {
+                \Log::error('Gallery upload: No image file in request', [
+                    'request_all' => $request->all(),
                     'request_files' => $request->allFiles(),
                 ]);
+                return back()->withErrors(['image' => 'Gambar wajib diunggah'])->withInput();
             }
             
+            $uploadedFile = $request->file('image');
+            
+            // Upload file dan dapatkan path
+            $storedPath = $uploadedFile->store('gallery', 'public');
+            
+            // Pastikan path tidak kosong atau "0"
+            if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+                \Log::error('Gallery upload: Invalid stored path', [
+                    'stored_path' => $storedPath,
+                    'original_name' => $uploadedFile->getClientOriginalName(),
+                ]);
+                return back()->withErrors(['image' => 'Gagal menyimpan gambar'])->withInput();
+            }
+            
+            // Set path ke data array
+            $data['image'] = $storedPath;
+            
+            // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
+            $fullPath = storage_path('app/public/' . $storedPath);
+            @chmod($fullPath, 0777);
+            @chmod(dirname($fullPath), 0777);
+            @chmod(storage_path('app/public/gallery'), 0777);
+            clearstatcache(true, $fullPath);
+            
+            // Log untuk debugging dengan detail lengkap
+            \Log::info('Gallery image uploaded', [
+                'original_name' => $uploadedFile->getClientOriginalName(),
+                'mime_type' => $uploadedFile->getMimeType(),
+                'size' => $uploadedFile->getSize(),
+                'stored_path' => $storedPath,
+                'fullPath' => $fullPath,
+                'exists' => file_exists($fullPath),
+                'readable' => is_readable($fullPath),
+                'permissions' => file_exists($fullPath) ? substr(sprintf('%o', fileperms($fullPath)), -4) : 'N/A',
+            ]);
+            
+            // Create gallery dengan data yang sudah dipastikan
             $gallery = Gallery::create($data);
             
             // Log untuk memastikan data tersimpan
@@ -113,6 +137,7 @@ class GaleriController extends Controller
                 'title' => $gallery->title,
                 'image_path_in_db' => $gallery->image,
                 'image_empty_check' => empty($gallery->image),
+                'image_path_equals_stored' => $gallery->image === $storedPath,
                 'category_id' => $gallery->category_id,
             ]);
         }
