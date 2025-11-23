@@ -85,8 +85,23 @@ class GaleriController extends Controller
                 @chmod(dirname($fullPath), 0777);
                 @chmod(storage_path('app/public/gallery'), 0777);
                 clearstatcache(true, $fullPath);
+                
+                // Log untuk debugging
+                \Log::info('Gallery image uploaded', [
+                    'path' => $data['image'],
+                    'fullPath' => $fullPath,
+                    'exists' => file_exists($fullPath),
+                    'readable' => is_readable($fullPath),
+                ]);
             }
-            Gallery::create($data);
+            $gallery = Gallery::create($data);
+            
+            // Log untuk memastikan data tersimpan
+            \Log::info('Gallery created', [
+                'id' => $gallery->id,
+                'title' => $gallery->title,
+                'image' => $gallery->image,
+            ]);
         }
 
         return redirect()->route('admin.galeri.index')->with('success', 'Foto berhasil ditambahkan');
