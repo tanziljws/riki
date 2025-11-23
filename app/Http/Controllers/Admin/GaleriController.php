@@ -163,7 +163,7 @@ class GaleriController extends Controller
                         'mime_type' => $uploadedFile->getMimeType(),
                         'gallery_dir_exists' => File::exists($galleryDir),
                         'gallery_dir_writable' => is_writable($galleryDir),
-                        'storage_disk_public_root' => Storage::disk('public')->getDriver()->getAdapter()->getPathPrefix(),
+                        'storage_path' => storage_path('app/public'),
                     ]);
                     return back()->withErrors(['image' => 'Gagal menyimpan gambar. Silakan coba lagi atau hubungi administrator.'])->withInput();
                 }
