@@ -82,33 +82,12 @@ class GaleriController extends Controller
             $data = $request->only(['title', 'description']);
             $data['category_id'] = $category->id;
 
-            // Upload foto jika ada - GUNAKAN CARA YANG SAMA PERSIS SEPERTI GURU CONTROLLER
+            // Upload foto jika ada - PERSIS SEPERTI GURU CONTROLLER (tanpa logging, tanpa validasi tambahan)
             if ($request->hasFile('image')) {
-                // Gunakan store() method PERSIS seperti GuruController - JANGAN ubah apapun
                 $data['image'] = $request->file('image')->store('gallery', 'public');
-                
-                // Set permission untuk file yang baru di-upload
-                $fullPath = storage_path('app/public/' . $data['image']);
-                if (file_exists($fullPath)) {
-                    @chmod($fullPath, 0777);
-                    @chmod(dirname($fullPath), 0777);
-                }
             }
 
-            // DEBUG: Log data sebelum create
-            \Log::info('Gallery upload: Before create', [
-                'data' => $data,
-                'image_path' => $data['image'] ?? 'NOT SET',
-            ]);
-
-            $gallery = Gallery::create($data);
-            
-            // DEBUG: Log setelah create
-            \Log::info('Gallery upload: After create', [
-                'id' => $gallery->id,
-                'image_path_in_db' => $gallery->image,
-                'image_path_valid' => !empty($gallery->image) && $gallery->image !== '0',
-            ]);
+            Gallery::create($data);
         }
 
         return redirect()->route('admin.galeri.index')->with('success', 'Foto berhasil ditambahkan');
