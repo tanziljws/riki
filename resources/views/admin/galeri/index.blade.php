@@ -35,7 +35,7 @@
         @forelse($items as $it)
           <tr class="gl-row">
             <td style="padding:12px 14px;border-top:1px solid #eef0f4">
-              <div style="width:76px;height:56px;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(2,6,23,.06)">
+              <div style="width:76px;height:56px;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 2px 8px rgba(2,6,23,.06)" data-gallery-id="{{ $it->id }}" data-image-path="{{ $it->image ?? 'NULL' }}">
                 @php
                   $imagePath = $it->image ?? null;
                   $imageUrl = null;
@@ -44,9 +44,15 @@
                   }
                 @endphp
                 @if($imageUrl)
-                  <img src="{{ $imageUrl }}" alt="img" style="width:100%;height:100%;object-fit:cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'76\' height=\'56\'%3E%3Crect fill=\'%23e5e7eb\' width=\'76\' height=\'56\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%2394a3b8\' font-size=\'12\'%3ENo Image%3C/text%3E%3C/svg%3E'; this.onerror=null;">
+                  <img src="{{ $imageUrl }}" 
+                       alt="img" 
+                       style="width:100%;height:100%;object-fit:cover" 
+                       data-debug-path="{{ $imagePath }}"
+                       data-debug-url="{{ $imageUrl }}"
+                       onerror="console.error('Image failed to load for gallery #{{ $it->id }}:', {path: '{{ $imagePath }}', url: this.src, error: event}); this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'76\' height=\'56\'%3E%3Crect fill=\'%23e5e7eb\' width=\'76\' height=\'56\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%2394a3b8\' font-size=\'12\'%3ENo Image%3C/text%3E%3C/svg%3E'; this.onerror=null;"
+                       onload="console.log('Image loaded for gallery #{{ $it->id }}:', {path: '{{ $imagePath }}', url: this.src});">
                 @else
-                  <div style="width:100%;height:100%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px">No Image</div>
+                  <div style="width:100%;height:100%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px" data-debug-no-image="true" data-gallery-id="{{ $it->id }}">No Image</div>
                 @endif
               </div>
             </td>
@@ -129,6 +135,62 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function(){
+      // Debug: Log semua data gallery ke console
+      console.log('=== GALLERY DEBUG INFO ===');
+      @foreach($items as $idx => $it)
+        console.log('Gallery #{{ $it->id }}:', {
+          id: {{ $it->id }},
+          title: '{{ $it->title }}',
+          image_path: '{{ $it->image ?? "NULL" }}',
+          image_empty: {{ empty($it->image) ? 'true' : 'false' }},
+          image_url: '{{ !empty($it->image) ? str_replace("/storage/", "/files/", asset("storage/".$it->image)) : "NO_URL" }}',
+          category: '{{ optional($it->category)->name ?? "NULL" }}'
+        });
+      @endforeach
+      
+      // Debug: Log semua image elements
+      const images = document.querySelectorAll('#galeriTable tbody img');
+      console.log('Total images found:', images.length);
+      images.forEach((img, idx) => {
+        console.log(`Image ${idx + 1}:`, {
+          src: img.src,
+          alt: img.alt,
+          onerror: img.onerror ? 'has handler' : 'no handler',
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          complete: img.complete
+        });
+        
+        // Monitor image load errors
+        img.addEventListener('error', function(e) {
+          console.error(`Image ${idx + 1} failed to load:`, {
+            src: this.src,
+            attempted_url: this.src,
+            error: e
+          });
+        });
+        
+        // Monitor image load success
+        img.addEventListener('load', function(e) {
+          console.log(`Image ${idx + 1} loaded successfully:`, {
+            src: this.src,
+            dimensions: `${this.naturalWidth}x${this.naturalHeight}`
+          });
+        });
+      });
+      
+      // Debug: Check for "No Image" placeholders
+      const noImageDivs = document.querySelectorAll('#galeriTable tbody div[style*="No Image"]');
+      console.log('No Image placeholders found:', noImageDivs.length);
+      noImageDivs.forEach((div, idx) => {
+        const row = div.closest('tr');
+        const title = row ? row.querySelector('td:nth-child(2)')?.textContent?.trim() : 'unknown';
+        console.log(`No Image placeholder ${idx + 1} in row:`, {
+          title: title,
+          parent_row: row
+        });
+      });
+      
       const input = document.getElementById('galeriSearch');
       const rows = Array.from(document.querySelectorAll('#galeriTable tbody .gl-row'));
       if(!input) return;
