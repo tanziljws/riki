@@ -136,27 +136,52 @@ class GalleryController extends Controller
             }
             
             // Store file - GUNAKAN CARA YANG SAMA SEPERTI GURU CONTROLLER
-            $storedPath = $uploadedFile->store('gallery', 'public');
+            try {
+                $storedPath = $uploadedFile->store('gallery', 'public');
+            } catch (\Exception $e) {
+                \Log::error('Gallery API: Exception during store', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                return response()->json([
+                    'message' => 'Gagal menyimpan gambar. Error: ' . $e->getMessage(),
+                    'error' => 'Storage exception'
+                ], 500);
+            }
             
             \Log::info('Gallery API file stored', [
                 'stored_path' => $storedPath,
+                'stored_path_type' => gettype($storedPath),
+                'stored_path_length' => is_string($storedPath) ? strlen($storedPath) : 'N/A',
                 'full_path' => storage_path('app/public/' . $storedPath),
             ]);
             
-            // Validate stored path
-            if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+            // Validate stored path - JANGAN PERNAH TERIMA PATH "0" ATAU KOSONG
+            $storedPathStr = (string) $storedPath;
+            if (empty($storedPath) || $storedPath === '0' || $storedPath === 0 || trim($storedPathStr) === '' || strlen($storedPathStr) < 5 || !str_starts_with($storedPathStr, 'gallery/')) {
                 \Log::error('Gallery API upload: store() returned invalid path', [
                     'stored_path' => $storedPath,
+                    'stored_path_type' => gettype($storedPath),
+                    'stored_path_string' => $storedPathStr,
+                    'stored_path_length' => strlen($storedPathStr),
                     'original_name' => $uploadedFile->getClientOriginalName(),
                     'file_size' => $uploadedFile->getSize(),
                     'mime_type' => $uploadedFile->getMimeType(),
+                    'is_valid' => $uploadedFile->isValid(),
                 ]);
+                
+                // Hapus file jika ada yang terbuat
+                if ($storedPath && $storedPath !== '0' && Storage::disk('public')->exists($storedPath)) {
+                    Storage::disk('public')->delete($storedPath);
+                }
+                
                 return response()->json([
-                    'message' => 'Gagal menyimpan gambar. Silakan coba lagi.',
+                    'message' => 'Gagal menyimpan gambar. Path tidak valid.',
                     'error' => 'Invalid file path returned',
                     'debug' => [
                         'stored_path' => $storedPath,
-                        'storage_exists' => Storage::disk('public')->exists($storedPath),
+                        'stored_path_type' => gettype($storedPath),
+                        'storage_exists' => $storedPath ? Storage::disk('public')->exists($storedPath) : false,
                     ]
                 ], 422);
             }
@@ -168,10 +193,23 @@ class GalleryController extends Controller
                     'stored_path' => $storedPath,
                     'full_path' => $fullPath,
                     'storage_exists' => Storage::disk('public')->exists($storedPath),
+                    'directory_exists' => is_dir(dirname($fullPath)),
+                    'directory_writable' => is_writable(dirname($fullPath)),
                 ]);
+                
+                // Hapus record yang mungkin terbuat
+                if (Storage::disk('public')->exists($storedPath)) {
+                    Storage::disk('public')->delete($storedPath);
+                }
+                
                 return response()->json([
                     'message' => 'Gagal menyimpan gambar. File tidak ditemukan setelah upload.',
-                    'error' => 'File not found after storage'
+                    'error' => 'File not found after storage',
+                    'debug' => [
+                        'stored_path' => $storedPath,
+                        'full_path' => $fullPath,
+                        'file_exists' => file_exists($fullPath),
+                    ]
                 ], 422);
             }
             
