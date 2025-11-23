@@ -87,8 +87,11 @@ chmod -R 777 /var/www/html/storage/app/public || true
 find /var/www/html/storage/app/public -type f -exec chmod 777 {} \; || true
 find /var/www/html/storage/app/public -type d -exec chmod 777 {} \; || true
 
-# Pastikan parent directories juga readable
-chmod 755 /var/www/html/storage/app/public/gallery 2>/dev/null || true
+# Pastikan gallery directory writable (777, bukan 755!)
+chmod 777 /var/www/html/storage/app/public/gallery 2>/dev/null || true
+# Pastikan gallery directory dibuat jika belum ada
+mkdir -p /var/www/html/storage/app/public/gallery || true
+chmod 777 /var/www/html/storage/app/public/gallery || true
 
 # Set permission untuk semua parent directories juga
 chmod 755 /var/www/html/storage || true
