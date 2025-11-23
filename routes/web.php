@@ -43,6 +43,11 @@ Route::get('/test-storage-route', function () {
 // Helper function untuk serve file dari storage
 $serveStorageFile = function ($path) {
     try {
+        // Validasi path - jika kosong atau "0", return 404
+        if (empty($path) || $path === '0' || trim($path) === '') {
+            abort(404);
+        }
+        
         $path = urldecode($path);
         $filePath = storage_path('app/public/' . $path);
         $realPath = realpath($filePath);

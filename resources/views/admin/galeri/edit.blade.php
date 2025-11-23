@@ -29,7 +29,13 @@
     </div>
     <div>
       <label>{{ __('admin.gallery.form.current_image') }}</label>
-      <div><img src="{{ asset('storage/'.$item->image) }}" alt="img" style="width:160px;height:120px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb"></div>
+      <div>
+        @if(!empty($item->image))
+          <img src="{{ str_replace('/storage/', '/files/', asset('storage/'.$item->image)) }}" alt="img" style="width:160px;height:120px;object-fit:cover;border-radius:10px;border:1px solid #e5e7eb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'120\'%3E%3Crect fill=\'%23e5e7eb\' width=\'160\' height=\'120\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%2394a3b8\' font-size=\'14\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+        @else
+          <div style="width:160px;height:120px;background:#e5e7eb;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;border-radius:10px;border:1px solid #e5e7eb">No Image</div>
+        @endif
+      </div>
     </div>
     <div>
       <label>{{ __('admin.gallery.form.change_image_optional') }}</label>
