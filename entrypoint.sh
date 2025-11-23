@@ -25,6 +25,7 @@ for conf in /etc/apache2/sites-available/*.conf; do
     if ! grep -q "Require all granted" "$conf"; then
         sed -i '/<Directory \/var\/www\/html\/public>/a\    Require all granted' "$conf" || true
     fi
+    
 done
 
 # Set permission untuk storage (sangat penting!)
