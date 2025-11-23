@@ -121,11 +121,13 @@ class GaleriController extends Controller
                 Storage::disk('public')->delete($item->image);
             }
             $data['image'] = $request->file('image')->store('gallery', 'public');
-            // Set permission untuk file yang baru di-upload
+            // Set permission untuk file yang baru di-upload (777 untuk fix 403)
             $fullPath = storage_path('app/public/' . $data['image']);
             if (file_exists($fullPath)) {
-                @chmod($fullPath, 0644);
-                @chown($fullPath, 'www-data');
+                @chmod($fullPath, 0777);
+                // Pastikan parent directory juga readable
+                $parentDir = dirname($fullPath);
+                @chmod($parentDir, 0777);
             }
         }
 

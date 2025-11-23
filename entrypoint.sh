@@ -13,8 +13,17 @@ sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-avail
 # Pastikan VirtualHost memiliki Options +FollowSymLinks +Indexes
 # Ini penting untuk Apache bisa akses symlink dan file
 for conf in /etc/apache2/sites-available/*.conf; do
+    # Pastikan Options +FollowSymLinks ada
     if ! grep -q "Options +FollowSymLinks" "$conf"; then
         sed -i '/<Directory \/var\/www\/html\/public>/a\    Options +FollowSymLinks +Indexes' "$conf" || true
+    fi
+    # Pastikan AllowOverride All untuk .htaccess bekerja
+    if ! grep -q "AllowOverride All" "$conf"; then
+        sed -i '/<Directory \/var\/www\/html\/public>/a\    AllowOverride All' "$conf" || true
+    fi
+    # Pastikan Require all granted (Apache 2.4+)
+    if ! grep -q "Require all granted" "$conf"; then
+        sed -i '/<Directory \/var\/www\/html\/public>/a\    Require all granted' "$conf" || true
     fi
 done
 
@@ -79,6 +88,9 @@ fi
 if [ -L /var/www/html/public/storage ]; then
     echo "✅ SUCCESS: storage symlink created"
     ls -la /var/www/html/public/ | grep storage
+    # Set permission untuk symlink (meskipun symlink tidak punya permission sendiri)
+    # Tapi pastikan parent directory readable
+    chmod 755 /var/www/html/public || true
     # Test apakah symlink bisa diakses
     if [ -d /var/www/html/public/storage ]; then
         echo "✅ Symlink target is accessible"

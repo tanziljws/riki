@@ -22,7 +22,7 @@
         <div class="grid">
             @foreach ($items as $it)
             <article class="card" data-category="{{ $it['kategori'] }}" data-id="{{ $it['id'] }}" data-likes="{{ $it['likes_count'] ?? 0 }}" data-comments="{{ $it['comments_count'] ?? 0 }}">
-                <div class="image" style="background-image:url('{{ asset($it['img']) }}');"></div>
+                <div class="image" style="background-image:url('{{ $it['img'] }}');"></div>
                 <div class="content">
                     <h3>{{ $it['judul'] }}</h3>
                     <p>{{ $it['desk'] }}</p>

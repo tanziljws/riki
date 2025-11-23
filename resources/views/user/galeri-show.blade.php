@@ -15,7 +15,7 @@
       </header>
 
       <div class="gd-media">
-        <img src="{{ asset($item['img']) }}" alt="{{ $item['judul'] }}" />
+        <img src="{{ $item['img'] }}" alt="{{ $item['judul'] }}" />
       </div>
 
       <div class="gd-actions" role="toolbar" aria-label="Aksi postingan">
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function(){
   const loginUrl = "{{ route('user.login') }}";
   const userName = "{{ auth()->check() ? auth()->user()->name : 'User' }}";
   const userAvatar = "{{ auth()->check() ? (auth()->user()->avatar ? asset('storage/'.auth()->user()->avatar) : ('https://www.gravatar.com/avatar/'.md5(strtolower(trim(auth()->user()->email))).'?d=identicon')) : '' }}";
-  const imgUrl = "{{ asset($item['img']) }}";
+  const imgUrl = "{{ $item['img'] }}";
   const postId = {{ $item['id'] }};
   const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
   const stateUrl = "{{ route('galeri.state', ['gallery' => $item['id']]) }}";
