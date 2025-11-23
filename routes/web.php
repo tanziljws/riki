@@ -42,12 +42,6 @@ Route::get('/test-storage-route', function () {
 
 // Helper function untuk serve file dari storage
 $serveStorageFile = function ($path) {
-    \Log::info("=== STORAGE ROUTE CALLED ===", [
-        'path' => $path, 
-        'uri' => request()->getRequestUri(),
-        'method' => request()->method(),
-    ]);
-    
     try {
         $path = urldecode($path);
         $filePath = storage_path('app/public/' . $path);
@@ -55,33 +49,55 @@ $serveStorageFile = function ($path) {
         $storagePath = realpath(storage_path('app/public'));
         
         if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
+            \Log::warning("Storage route: Path traversal or invalid", ['path' => $path, 'realPath' => $realPath]);
             abort(404);
         }
         
         if (!file_exists($realPath) || !is_file($realPath)) {
+            \Log::warning("Storage route: File not found", ['path' => $path, 'realPath' => $realPath]);
             abort(404);
         }
         
+        // Set permission untuk memastikan file readable
         @chmod($realPath, 0777);
         @chmod(dirname($realPath), 0777);
         clearstatcache(true, $realPath);
         
-        if (Storage::disk('public')->exists($path)) {
-            return Storage::disk('public')->response($path);
+        // Cek apakah file readable
+        if (!is_readable($realPath)) {
+            \Log::error("Storage route: File not readable", ['path' => $path, 'realPath' => $realPath]);
+            abort(500, 'File not readable');
         }
         
+        // Coba gunakan Storage facade dulu
+        if (Storage::disk('public')->exists($path)) {
+            try {
+                return Storage::disk('public')->response($path);
+            } catch (\Exception $e) {
+                \Log::warning("Storage facade failed, using file_get_contents", ['error' => $e->getMessage()]);
+            }
+        }
+        
+        // Fallback: gunakan file_get_contents
         $content = @file_get_contents($realPath);
         if ($content === false) {
-            abort(500);
+            \Log::error("Storage route: Cannot read file", ['path' => $path, 'realPath' => $realPath]);
+            abort(500, 'Cannot read file');
         }
         
+        $mimeType = @mime_content_type($realPath) ?: 'application/octet-stream';
+        
         return response($content, 200)
-            ->header('Content-Type', mime_content_type($realPath) ?: 'application/octet-stream')
+            ->header('Content-Type', $mimeType)
             ->header('Content-Length', strlen($content))
             ->header('Cache-Control', 'public, max-age=31536000');
     } catch (\Exception $e) {
-        \Log::error("Storage route exception", ['error' => $e->getMessage()]);
-        abort(500);
+        \Log::error("Storage route exception", [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'path' => $path ?? 'unknown'
+        ]);
+        abort(500, 'Error serving file: ' . $e->getMessage());
     }
 };
 
