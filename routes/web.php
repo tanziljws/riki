@@ -42,7 +42,15 @@ Route::get('/test-storage-route', function () {
 
 // Storage route - serve files from storage/app/public
 // Route ini HARUS di atas semua route lain untuk memastikan tidak terblokir
+// Gunakan catch-all pattern untuk match semua path
 Route::get('/storage/{path}', function ($path) {
+    // Debug: log request
+    \Log::info("=== STORAGE ROUTE HIT ===", [
+        'path_param' => $path,
+        'request_uri' => request()->getRequestUri(),
+        'request_path' => request()->path(),
+        'request_url' => request()->url(),
+    ]);
     // Log untuk debugging - pastikan route dipanggil
     \Log::info("=== STORAGE ROUTE CALLED ===", [
         'path' => $path, 
