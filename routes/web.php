@@ -27,6 +27,51 @@ use App\Http\Controllers\Admin\PerangkatController;
 use App\Http\Controllers\Admin\AccountController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\User\AuthController as UserAuthController;
+use Illuminate\Support\Facades\Storage;
+
+/*
+||||--------------------------------------------------------------------------
+|||| Storage Route - HARUS DI ATAS SEMUA ROUTE LAIN
+||||--------------------------------------------------------------------------
+*/
+
+// Storage route - serve files from storage/app/public
+Route::get('/storage/{path}', function ($path) {
+    try {
+        $path = urldecode($path);
+        $filePath = storage_path('app/public/' . $path);
+        $realPath = realpath($filePath);
+        $storagePath = realpath(storage_path('app/public'));
+        
+        if (!$realPath || !$storagePath || strpos($realPath, $storagePath) !== 0) {
+            abort(404);
+        }
+        
+        if (!file_exists($realPath) || !is_file($realPath)) {
+            abort(404);
+        }
+        
+        @chmod($realPath, 0777);
+        @chmod(dirname($realPath), 0777);
+        clearstatcache(true, $realPath);
+        
+        if (Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->response($path);
+        }
+        
+        $content = @file_get_contents($realPath);
+        if ($content === false) {
+            abort(500);
+        }
+        
+        return response($content, 200)
+            ->header('Content-Type', mime_content_type($realPath) ?: 'application/octet-stream')
+            ->header('Content-Length', strlen($content))
+            ->header('Cache-Control', 'public, max-age=31536000');
+    } catch (\Exception $e) {
+        abort(500);
+    }
+})->where('path', '.*')->name('storage');
 
 /*
 |||--------------------------------------------------------------------------
