@@ -82,12 +82,93 @@ class GaleriController extends Controller
             $data = $request->only(['title', 'description']);
             $data['category_id'] = $category->id;
 
-            // Upload foto jika ada - PERSIS SEPERTI GURU CONTROLLER (tanpa logging, tanpa validasi tambahan)
+            // Upload foto jika ada - PERSIS SEPERTI GURU CONTROLLER
             if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('gallery', 'public');
+                $file = $request->file('image');
+                
+                // DEBUG: Log sebelum store
+                \Log::info('Gallery upload: Before store', [
+                    'has_file' => true,
+                    'original_name' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'temp_path' => $file->getRealPath(),
+                    'temp_exists' => file_exists($file->getRealPath()),
+                ]);
+                
+                // Coba store
+                $storedPath = $file->store('gallery', 'public');
+                
+                // DEBUG: Log setelah store
+                \Log::info('Gallery upload: After store', [
+                    'stored_path' => $storedPath,
+                    'stored_path_type' => gettype($storedPath),
+                    'stored_path_empty' => empty($storedPath),
+                    'stored_path_equals_zero' => $storedPath === '0',
+                    'stored_path_equals_zero_string' => $storedPath === '0',
+                    'stored_path_length' => strlen($storedPath ?? ''),
+                ]);
+                
+                // VALIDASI: Jika path "0" atau kosong, gunakan cara alternatif
+                if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
+                    \Log::warning('Gallery upload: store() returned invalid path, trying alternative method');
+                    
+                    // Coba gunakan Storage facade langsung
+                    try {
+                        $storedPath = Storage::disk('public')->putFile('gallery', $file);
+                        \Log::info('Gallery upload: Storage::putFile() returned', [
+                            'path' => $storedPath,
+                            'empty' => empty($storedPath),
+                        ]);
+                    } catch (\Exception $e) {
+                        \Log::error('Gallery upload: Storage::putFile() failed', [
+                            'error' => $e->getMessage(),
+                        ]);
+                        
+                        // Coba cara manual dengan move_uploaded_file
+                        $galleryDir = storage_path('app/public/gallery');
+                        if (!is_dir($galleryDir)) {
+                            @mkdir($galleryDir, 0777, true);
+                        }
+                        $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+                        $destination = $galleryDir . '/' . $fileName;
+                        
+                        if (@move_uploaded_file($file->getRealPath(), $destination)) {
+                            $storedPath = 'gallery/' . $fileName;
+                            @chmod($destination, 0777);
+                            \Log::info('Gallery upload: move_uploaded_file() succeeded', [
+                                'path' => $storedPath,
+                            ]);
+                        } else {
+                            \Log::error('Gallery upload: All methods failed');
+                            return back()->withErrors(['image' => 'Gagal menyimpan gambar. Silakan coba lagi.'])->withInput();
+                        }
+                    }
+                }
+                
+                $data['image'] = $storedPath;
+                
+                // Set permission
+                $fullPath = storage_path('app/public/' . $data['image']);
+                if (file_exists($fullPath)) {
+                    @chmod($fullPath, 0777);
+                    @chmod(dirname($fullPath), 0777);
+                }
             }
 
-            Gallery::create($data);
+            // DEBUG: Log sebelum create
+            \Log::info('Gallery upload: Before create', [
+                'data' => $data,
+                'image_path' => $data['image'] ?? 'NOT SET',
+            ]);
+
+            $gallery = Gallery::create($data);
+            
+            // DEBUG: Log setelah create
+            \Log::info('Gallery upload: After create', [
+                'id' => $gallery->id,
+                'image_path_in_db' => $gallery->image,
+            ]);
         }
 
         return redirect()->route('admin.galeri.index')->with('success', 'Foto berhasil ditambahkan');
