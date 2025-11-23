@@ -10,8 +10,9 @@
     # Match SEMUA request yang dimulai dengan /storage/ dan arahkan ke Laravel
     # Tidak peduli apakah file exists atau tidak - selalu ke Laravel
     # Gunakan REQUEST_URI untuk match, dan RewriteRule untuk route ke index.php
-    RewriteCond %{REQUEST_URI} ^/storage/
-    RewriteRule ^storage/(.*)$ /index.php [L,QSA]
+    # IMPORTANT: Rule ini HARUS di atas semua rule lain
+    RewriteCond %{REQUEST_URI} ^/storage
+    RewriteRule .* index.php [L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
