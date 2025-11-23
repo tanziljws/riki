@@ -48,7 +48,11 @@ Route::get('/', function(){
 
 // Storage route - serve files from storage/app/public
 // Route ini digunakan karena Apache di Railway tidak bisa serve file dari symlink dengan benar
+// HARUS di atas semua route lain untuk memastikan tidak terblokir
 Route::get('/storage/{path}', function ($path) {
+    // Log untuk debugging
+    \Log::info("Storage route called", ['path' => $path, 'request_uri' => request()->getRequestUri()]);
+    
     try {
         // Decode path jika ada encoding
         $path = urldecode($path);
