@@ -57,53 +57,26 @@ find /var/www/html/storage/logs -type f -exec chmod 666 {} \; || true
 find /var/www/html/storage/app/public -type f -exec chmod 777 {} \; || true
 find /var/www/html/storage/app/public -type d -exec chmod 777 {} \; || true
 
-# BUAT SYMLINK - ini cara standar Laravel untuk serve storage files
-# HAPUS route custom /storage - biarkan Apache serve langsung dari symlink
+# HAPUS SYMLINK - gunakan route Laravel saja untuk serve file
+# Ini untuk fix 403 error di Railway - Apache tidak bisa serve file dari symlink
 cd /var/www/html
 
 # Hapus symlink atau directory lama jika ada (bisa jadi directory atau symlink)
 if [ -e /var/www/html/public/storage ]; then
     if [ -L /var/www/html/public/storage ]; then
-        echo "Removing existing symlink..."
+        echo "Removing existing symlink (will use Laravel route instead)..."
         rm -f /var/www/html/public/storage || true
     elif [ -d /var/www/html/public/storage ]; then
-        echo "Removing existing directory (should be symlink)..."
+        echo "Removing existing directory (will use Laravel route instead)..."
         rm -rf /var/www/html/public/storage || true
     else
-        echo "Removing existing file..."
+        echo "Removing existing file (will use Laravel route instead)..."
         rm -f /var/www/html/public/storage || true
     fi
 fi
 
-# Buat symlink dengan artisan (cara paling reliable)
-php artisan storage:link || true
-
-# Fallback: buat manual jika artisan gagal
-if [ ! -L /var/www/html/public/storage ]; then
-    echo "Creating symlink manually..."
-    ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage || true
-fi
-
-# Verifikasi symlink
-if [ -L /var/www/html/public/storage ]; then
-    echo "✅ SUCCESS: storage symlink created"
-    ls -la /var/www/html/public/ | grep storage
-    # Set permission untuk symlink (meskipun symlink tidak punya permission sendiri)
-    # Tapi pastikan parent directory readable
-    chmod 755 /var/www/html/public || true
-    # Test apakah symlink bisa diakses
-    if [ -d /var/www/html/public/storage ]; then
-        echo "✅ Symlink target is accessible"
-        ls -la /var/www/html/public/storage/ | head -5 || echo "⚠️  Cannot list symlink contents"
-    else
-        echo "⚠️  WARNING: Symlink exists but target not accessible"
-    fi
-else
-    echo "❌ ERROR: Failed to create storage symlink"
-    echo "Checking what exists at public/storage:"
-    ls -la /var/www/html/public/ | grep storage || echo "Nothing found"
-    exit 1
-fi
+# JANGAN buat symlink - semua request ke /storage/ akan masuk ke Laravel route
+echo "✅ Storage symlink removed - all /storage/ requests will go to Laravel route"
 
 # Final permission check - pastikan semua bisa dibaca
 # Set permission secara recursive untuk semua file dan folder
