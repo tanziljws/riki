@@ -110,8 +110,12 @@ class GaleriController extends Controller
                 ]);
                 
                 // VALIDASI: Jika path "0" atau kosong, gunakan cara alternatif
-                if (empty($storedPath) || $storedPath === '0' || trim($storedPath) === '') {
-                    \Log::warning('Gallery upload: store() returned invalid path, trying alternative method');
+                // Periksa dengan lebih ketat - termasuk jika path adalah string "0"
+                if (empty($storedPath) || $storedPath === '0' || $storedPath === 0 || trim($storedPath) === '' || strlen($storedPath) < 3) {
+                    \Log::warning('Gallery upload: store() returned invalid path', [
+                        'path' => $storedPath,
+                        'type' => gettype($storedPath),
+                    ]);
                     
                     // Coba gunakan Storage facade langsung
                     try {
@@ -119,9 +123,15 @@ class GaleriController extends Controller
                         \Log::info('Gallery upload: Storage::putFile() returned', [
                             'path' => $storedPath,
                             'empty' => empty($storedPath),
+                            'equals_zero' => $storedPath === '0',
                         ]);
+                        
+                        // Jika masih "0", coba cara manual
+                        if (empty($storedPath) || $storedPath === '0' || $storedPath === 0) {
+                            throw new \Exception('Storage::putFile() also returned invalid path');
+                        }
                     } catch (\Exception $e) {
-                        \Log::error('Gallery upload: Storage::putFile() failed', [
+                        \Log::warning('Gallery upload: Storage::putFile() failed, trying move_uploaded_file', [
                             'error' => $e->getMessage(),
                         ]);
                         
@@ -129,21 +139,39 @@ class GaleriController extends Controller
                         $galleryDir = storage_path('app/public/gallery');
                         if (!is_dir($galleryDir)) {
                             @mkdir($galleryDir, 0777, true);
+                            @chmod($galleryDir, 0777);
                         }
                         $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
                         $destination = $galleryDir . '/' . $fileName;
                         
-                        if (@move_uploaded_file($file->getRealPath(), $destination)) {
+                        // Coba copy dulu, lalu move
+                        if (@copy($file->getRealPath(), $destination) || @move_uploaded_file($file->getRealPath(), $destination)) {
                             $storedPath = 'gallery/' . $fileName;
                             @chmod($destination, 0777);
-                            \Log::info('Gallery upload: move_uploaded_file() succeeded', [
+                            \Log::info('Gallery upload: move_uploaded_file/copy() succeeded', [
                                 'path' => $storedPath,
+                                'file_exists' => file_exists($destination),
                             ]);
                         } else {
-                            \Log::error('Gallery upload: All methods failed');
+                            \Log::error('Gallery upload: All methods failed', [
+                                'temp_path' => $file->getRealPath(),
+                                'temp_exists' => file_exists($file->getRealPath()),
+                                'destination' => $destination,
+                                'gallery_dir_exists' => is_dir($galleryDir),
+                                'gallery_dir_writable' => is_writable($galleryDir),
+                            ]);
                             return back()->withErrors(['image' => 'Gagal menyimpan gambar. Silakan coba lagi.'])->withInput();
                         }
                     }
+                }
+                
+                // FINAL VALIDASI: Pastikan path tidak "0" sebelum disimpan
+                if (empty($storedPath) || $storedPath === '0' || $storedPath === 0 || trim($storedPath) === '' || strlen($storedPath) < 3) {
+                    \Log::error('Gallery upload: Final validation failed - path is still invalid', [
+                        'path' => $storedPath,
+                        'type' => gettype($storedPath),
+                    ]);
+                    return back()->withErrors(['image' => 'Gagal menyimpan gambar. Path tidak valid.'])->withInput();
                 }
                 
                 $data['image'] = $storedPath;
