@@ -58,13 +58,19 @@ class GaleriController extends Controller
                 $fullPath = storage_path('app/public/' . $path);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0777);
-                    // Pastikan semua parent directories juga readable
+                    // Pastikan parent directories juga readable (dengan limit untuk avoid infinite loop)
                     $parentDir = dirname($fullPath);
-                    while ($parentDir !== storage_path('app/public')) {
+                    $storagePublic = storage_path('app/public');
+                    $maxIterations = 10; // Safety limit
+                    $iterations = 0;
+                    while ($parentDir !== $storagePublic && $iterations < $maxIterations) {
                         @chmod($parentDir, 0777);
-                        $parentDir = dirname($parentDir);
+                        $newParent = dirname($parentDir);
+                        if ($newParent === $parentDir) break; // Reached root
+                        $parentDir = $newParent;
+                        $iterations++;
                     }
-                    @chmod(storage_path('app/public'), 0777);
+                    @chmod($storagePublic, 0777);
                     @chmod(storage_path('app/public/gallery'), 0777);
                     clearstatcache(true, $fullPath);
                 }
