@@ -52,7 +52,7 @@ class GaleriController extends Controller
                 return [
                     'id' => $g->id,
                     'kategori' => $slug,
-                    'img' => asset('storage/'.$g->image),
+                    'img' => str_replace('/storage/', '/files/', asset('storage/'.$g->image)),
                     'judul' => $g->title,
                     'desk' => $g->description ?? '',
                     'likes_count' => $likes,
@@ -74,7 +74,7 @@ class GaleriController extends Controller
         $item = [
             'id' => $g->id,
             'kategori' => $g->category ? Str::slug($g->category->name) : 'lainnya',
-            'img' => asset('storage/'.$g->image), // Gunakan asset() helper untuk HTTPS
+            'img' => str_replace('/storage/', '/files/', asset('storage/'.$g->image)), // Gunakan /files/ untuk bypass 403
             'judul' => $g->title,
             'desk' => $g->description ?? '',
         ];

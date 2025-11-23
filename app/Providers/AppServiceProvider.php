@@ -35,8 +35,11 @@ class AppServiceProvider extends ServiceProvider
         
         // Override asset() helper untuk storage files - gunakan /files/ sebagai ganti /storage/
         // Ini untuk bypass 403 error di Railway
-        \Illuminate\Support\Facades\Blade::directive('storage', function ($expression) {
-            return "<?php echo str_replace('/storage/', '/files/', asset('storage/' . {$expression})); ?>";
-        });
+        // Buat helper function untuk storage asset
+        if (!function_exists('storage_asset')) {
+            function storage_asset($path) {
+                return str_replace('/storage/', '/files/', asset('storage/' . $path));
+            }
+        }
     }
 }
