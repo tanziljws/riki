@@ -54,13 +54,15 @@ class GaleriController extends Controller
             }
 
             foreach ($files as $idx => $img) {
+                // Gunakan cara yang sama seperti GuruController/JurusanController
                 $path = $img->store('gallery', 'public');
-                // Set permission untuk file yang baru di-upload (777 untuk fix 403/500)
+                
+                // Set permission untuk file yang baru di-upload
                 $fullPath = storage_path('app/public/' . $path);
-                @chmod($fullPath, 0777);
-                @chmod(dirname($fullPath), 0777);
-                @chmod(storage_path('app/public/gallery'), 0777);
-                clearstatcache(true, $fullPath);
+                if (file_exists($fullPath)) {
+                    @chmod($fullPath, 0777);
+                    @chmod(dirname($fullPath), 0777);
+                }
                 
                 Gallery::create([
                     'title' => 'Home Slide',
